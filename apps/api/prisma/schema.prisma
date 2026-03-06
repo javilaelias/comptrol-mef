@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  super_admin
+  it_admin
+  asset_manager
+  security_analyst
+  auditor
+  employee
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum AssetType {
+  laptop
+  desktop
+  server
+  network
+  iot
+  ot
+  mobile
+  virtual_machine
+  cloud_resource
+  other
+}
+
+enum AssetStatus {
+  in_use
+  in_stock
+  repair
+  retired
+  disposed
+  lost
+}
+
+enum AssetCriticality {
+  low
+  medium
+  high
+  critical
+}
+
+enum AssetSource {
+  manual
+  discovery_active
+  discovery_passive
+  api_import
+}
+
+enum LicenseType {
+  per_user
+  per_device
+  concurrent
+  subscription
+  enterprise
+}
+
+enum LicenseStatus {
+  active
+  expiring
+  expired
+  suspended
+}
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(160)
+  slug      String   @unique @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sites     Site[]
+  locations Location[]
+  orgUnits  OrgUnit[]
+  users     User[]
+  assets    Asset[]
+  applications Application[]
+  licenseHoldings LicenseHolding[]
+  licenses  SoftwareLicense[]
+  enadSurveys EnadSurvey[]
+  auditLogs AuditLog[]
+
+  @@map("tenants")
+}
+
+model Site {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  name         String   @db.VarChar(120)
+  code         String?  @db.VarChar(40)
+  country      String?  @db.VarChar(80)
+  city         String?  @db.VarChar(80)
+  addressLine1 String?  @map("address_line1") @db.VarChar(160)
+  addressLine2 String?  @map("address_line2") @db.VarChar(160)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  locations Location[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("sites")
+}
+
+model Location {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  siteId       String?  @map("site_id") @db.Uuid
+  name         String   @db.VarChar(120)
+  code         String?  @db.VarChar(40)
+  country      String?  @db.VarChar(80)
+  city         String?  @db.VarChar(80)
+  addressLine1 String?  @map("address_line1") @db.VarChar(160)
+  addressLine2 String?  @map("address_line2") @db.VarChar(160)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  site   Site?  @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  assets Asset[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId, siteId])
+  @@map("locations")
+}
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  email       String     @db.VarChar(190)
+  fullName    String     @map("full_name") @db.VarChar(140)
+  role        UserRole
+  status      UserStatus @default(active)
+  mfaEnabled  Boolean    @default(false) @map("mfa_enabled")
+  ssoProvider String?    @map("sso_provider") @db.VarChar(40)
+  passwordHash String?   @map("password_hash") @db.VarChar(255)
+  lastLoginAt DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownedAssets Asset[] @relation("AssetOwner")
+  auditEvents AuditLog[] @relation("AuditActor")
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+model OrgUnit {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String   @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("org_units")
+}
+
+model Asset {
+  id                String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  assetTag          String           @map("asset_tag") @db.VarChar(80)
+  inventoryCode     String?          @map("inventory_code") @db.VarChar(40)
+  description       String?          @db.Text
+  serialNumber      String?          @map("serial_number") @db.VarChar(120)
+  hostname          String?          @db.VarChar(120)
+  ipAddress         String?          @map("ip_address") @db.Inet
+  macAddress        String?          @map("mac_address") @db.VarChar(17)
+  assetType         AssetType        @map("asset_type")
+  vendor            String?          @db.VarChar(80)
+  model             String?          @db.VarChar(120)
+  operatingSystem   String?          @map("operating_system") @db.VarChar(120)
+  status            AssetStatus      @default(in_use)
+  conditionLabel    String?          @map("condition_label") @db.VarChar(40)
+  criticality       AssetCriticality @default(medium)
+  ownerUserId       String?          @map("owner_user_id") @db.Uuid
+  locationId        String?          @map("location_id") @db.Uuid
+  orgUnitId         String?          @map("org_unit_id") @db.Uuid
+  purchaseDate      DateTime?        @map("purchase_date") @db.Date
+  acquisitionYear   Int?             @map("acquisition_year")
+  warrantyEndDate   DateTime?        @map("warranty_end_date") @db.Date
+  depreciationEndDate DateTime?      @map("depreciation_end_date") @db.Date
+  purchaseCost      Decimal          @default(0) @map("purchase_cost") @db.Decimal(14, 2)
+  currentBookValue  Decimal          @default(0) @map("current_book_value") @db.Decimal(14, 2)
+  lastSeenAt        DateTime?        @map("last_seen_at") @db.Timestamptz(6)
+  source            AssetSource      @default(manual)
+  fingerprint       String?          @db.VarChar(200)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner    User?    @relation("AssetOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  orgUnit  OrgUnit? @relation(fields: [orgUnitId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, assetTag])
+  @@unique([tenantId, serialNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, lastSeenAt(sort: Desc)])
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, macAddress])
+  @@index([tenantId, ipAddress])
+  @@index([tenantId, inventoryCode])
+  @@index([tenantId, orgUnitId])
+  @@map("assets")
+}
+
+model Application {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  name             String   @db.VarChar(240)
+  objective        String?  @db.Text
+  ownerOrgUnit     String?  @map("owner_org_unit") @db.VarChar(200)
+  status           String?  @db.VarChar(80)
+  lastUpdateYear   Int?     @map("last_update_year")
+  sourceDocument   String?  @map("source_document") @db.VarChar(200)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("applications")
+}
+
+model LicenseHolding {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  asOfDate      DateTime @map("as_of_date") @db.Date
+  category      String?  @db.VarChar(160)
+  executingUnit String?  @map("executing_unit") @db.VarChar(200)
+  softwareName  String   @map("software_name") @db.VarChar(240)
+  quantityInt   Int?     @map("quantity_int")
+  quantityText  String?  @map("quantity_text") @db.VarChar(80)
+  sourceSheet   String?  @map("source_sheet") @db.VarChar(80)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, asOfDate])
+  @@index([tenantId, softwareName])
+  @@index([tenantId, executingUnit])
+  @@map("license_holdings")
+}
+
+model EnadSurvey {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  year           Int
+  asOfDate       DateTime @map("as_of_date") @db.Date
+  sourceDocument String   @map("source_document") @db.VarChar(200)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rawPages     EnadRawPage[]
+  items        EnadItem[]
+  manualAnswers EnadManualAnswer[]
+
+  @@unique([tenantId, year])
+  @@index([tenantId, asOfDate])
+  @@map("enad_surveys")
+}
+
+model EnadRawPage {
+  id        BigInt   @id @default(autoincrement())
+  surveyId  String   @map("survey_id") @db.Uuid
+  page      Int      @map("page_number")
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  survey EnadSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@unique([surveyId, page])
+  @@map("enad_raw_pages")
+}
+
+model EnadItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  surveyId     String   @map("survey_id") @db.Uuid
+  code         String   @db.VarChar(40) // e.g., "14.6" or "20.1.in_use"
+  questionCode Int      @map("question_code") // e.g., 14
+  label        String   @db.Text
+  value1       Decimal? @map("value1") @db.Decimal(18, 2)
+  value2       Decimal? @map("value2") @db.Decimal(18, 2)
+  valueText    String?  @map("value_text") @db.VarChar(120)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  survey EnadSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId, questionCode])
+  @@index([surveyId, code])
+  @@map("enad_items")
+}
+
+model EnadManualAnswer {
+  id               String   @id @default(uuid()) @db.Uuid
+  surveyId          String  @map("survey_id") @db.Uuid
+  questionCode      Int     @map("question_code")
+  selectedOptionCodes String[] @default([]) @map("selected_option_codes")
+  answerText        String? @map("answer_text") @db.Text
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  survey EnadSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@unique([surveyId, questionCode])
+  @@map("enad_manual_answers")
+}
+
+model SoftwareLicense {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  softwareName  String        @map("software_name") @db.VarChar(140)
+  vendor        String?       @db.VarChar(120)
+  licenseType   LicenseType   @map("license_type")
+  totalSeats    Int           @map("total_seats")
+  assignedSeats Int           @default(0) @map("assigned_seats")
+  activeAgents  Int           @default(0) @map("active_agents")
+  inactiveAgents Int          @default(0) @map("inactive_agents")
+  unitCost      Decimal       @default(0) @map("unit_cost") @db.Decimal(14, 2)
+  renewalDate   DateTime?     @map("renewal_date") @db.Date
+  autoRenew     Boolean       @default(false) @map("auto_renew")
+  status        LicenseStatus @default(active)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("software_licenses")
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  tenantId    String   @map("tenant_id") @db.Uuid
+  eventId     String   @unique @default(uuid()) @map("event_id") @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  entityType  String   @map("entity_type") @db.VarChar(60)
+  entityId    String   @map("entity_id") @db.Uuid
+  action      String   @db.VarChar(40)
+  beforeData  Json?    @map("before_data")
+  afterData   Json?    @map("after_data")
+  metadata    Json?    @db.JsonB
+  ipAddress   String?  @map("ip_address") @db.Inet
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?  @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, entityType, entityId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

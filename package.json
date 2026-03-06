@@ -1,0 +1,29 @@
+{
+  "name": "comptrol-mef",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Comptrol-MEF (ITAM/CMDB) demo",
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm --workspace apps/api run start:dev\" \"npm --workspace apps/web run dev\"",
+    "dev:api": "npm --workspace apps/api run start:dev",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:mobile": "npm --workspace apps/mobile run start",
+    "db:migrate": "npm --workspace apps/api run db:migrate",
+    "db:seed": "npm --workspace apps/api exec -- prisma db seed",
+    "migrate": "npm run db:migrate",
+    "seed": "npm run db:seed",
+    "import:docs": "npm --workspace apps/api run import:docs",
+    "import:enad": "npm --workspace apps/api run import:enad",
+    "start": "npm run dev",
+    "build": "npm --workspace apps/api run build && npm --workspace apps/web run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

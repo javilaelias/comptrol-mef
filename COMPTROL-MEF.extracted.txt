@@ -1,0 +1,2581 @@
+Actúa como un Arquitecto de Software Senior y Desarrollador Full-Stack Experto.
+Tu tarea es diseñar la arquitectura, el esquema de base de datos y generar el código inicial para "Comptrol-Mef", una plataforma SaaS B2B de Gestión de Activos de TI (ITAM) e Inteligencia Cibernética de próxima generación. 
+El objetivo de Comptrol-Mef es eliminar el "caos de las hojas de cálculo", evitar pérdidas financieras por licencias inactivas, automatizar el ciclo de vida del hardware (incluyendo e-Waste) y mitigar los riesgos de Shadow IT mediante un descubrimiento automatizado.
+Por favor, diseña el sistema y proporciona el código basándote en los siguientes requerimientos técnicos:
+1. CARACTERÍSTICAS PRINCIPALES (Módulos del Sistema)CMDB en la Nube (Única Fuente de Verdad): Base de datos centralizada de configuración con historial de cambios inmutable y Control de Acceso Basado en Roles (RBAC) granular.Motor de Auto-Discovery (Descubrimiento Activo/Pasivo): Escaneo sin agentes para identificar dispositivos IT, OT, IoT y en la nube conectados a la red.Gestión Financiera y SAM (Software Asset Management): Rastreo automático de licencias de software, detección de agentes inactivos (antivirus, RMM) y flujos de automatización para Onboarding/Offboarding de empleados. Gestión de Ciclo de Vida y e-Waste: Trazabilidad desde la orden de compra hasta la depreciación y eliminación, con almacenamiento seguro de "Certificados de Destrucción de Datos" para cumplimiento de normativas.Módulo App Móvil (Gestión Física): Generación e impresión de etiquetas, y escáner nativo de códigos QR/Códigos de barras mediante la cámara del dispositivo para auditorías de inventario en tiempo real. Capa de Inteligencia Artificial (IA): Mantenimiento predictivo basado en telemetría de los equipos. OCR para extracción automática de datos desde facturas de compra. Agente conversacional (Chatbot) para que los usuarios finales soliciten equipos o reporten fallas. 
+2. STACK TECNOLÓGICO REQUERIDO: Frontend (Web): Next.js (React) con TypeScript, Tailwind CSS para el diseño UI, y Redux o Zustand para la gestión de estados. Frontend (Móvil): React Native (Expo) para compatibilidad multiplataforma (iOS y Android). Backend / Microservicios: Node.js (NestJS o Express) con TypeScript para la API principal, y un microservicio en Go o Python especializado en el escaneo de red de alta concurrencia. Bases de Datos: PostgreSQL para datos relacionales (CMDB, usuarios, finanzas).Redis para caché y gestión de sesiones. Neo4j (opcional) para el mapeo visual de dependencias de red. Infraestructura y DevOps: Docker, Kubernetes, AWS/Azure, CI/CD pipelines (GitHub Actions).
+3. SEGURIDAD Y CUMPLIMIENTO Arquitectura diseñada bajo estándares de ISO 27001 y SOC 2. Autenticación multifactor (MFA/2FA) nativa e integración con SSO (SAML/OAuth 2.0) para Azure AD / Google Workspace. Encriptación AES-256 para datos en reposo y TLS 1.3 para datos en tránsito. Trazabilidad completa (Logs de auditoría) para cada modificación de un activo. 
+4. ENTREGABLES ESPERADOS 
+Por favor, entrégame lo siguiente en orden: Arquitectura del Sistema: Un diagrama en formato de texto o Mermaid.js que muestre cómo interactúan los microservicios, el frontend, la app móvil y las bases de datos. Esquema de Base de Datos Relacional (PostgreSQL): Código SQL o modelos ORM (Prisma/TypeORM) para las tablas principales: Users, Assets, SoftwareLicenses, Locations y AuditLogs. Estructura de Carpetas: La estructura de directorios recomendada para el monorepo (Backend y Frontend).Código Backend (API REST): El código de un controlador en Node.js/TypeScript que maneje el endpoint POST /api/v1/assets/discovery (simulando la ingesta de un nuevo activo descubierto en la red).Código Frontend (Dashboard): Un componente de React (usando Tailwind) que renderice el panel principal mostrando métricas clave: "Total de Activos", "Licencias Inactivas", "Equipos para e-Waste" y "Valor Total del Inventario". 
+Asegúrate de que el código sea limpio, modular, esté fuertemente tipado e incluya comentarios explicativos. ¡Comencemos con el diseño de la arquitectura y la base de datos!
+OPENAI/CODEX:
+Entendido: quieres un diseño técnico completo y accionable para Comptrol-Mef (arquitectura + base de datos + código inicial backend/frontend), con enfoque SaaS B2B, seguridad enterprise y escalabilidad.
+Asumiré multi-tenant desde el día 1 y stack: Next.js + React Native + NestJS + Python scanner + PostgreSQL/Redis (+Neo4j opcional).
+ [ ] Pregunta rápida de precisión (solo 2):
+1) ¿Prefieres despliegue base en AWS o Azure? (te dejo neutral cloud-agnostic abajo)
+2) ¿Quieres ORM en backend con Prisma o TypeORM? (aquí te doy SQL + ejemplo NestJS sin acoplar ORM)
+- [ ] Plan de entrega (en el orden que pediste)
+- [x] Arquitectura del sistema (Mermaid)
+- [x] Esquema relacional PostgreSQL (SQL)
+- [x] Estructura de carpetas monorepo
+- [x] Código backend POST /api/v1/assets/discovery
+- [x] Código frontend dashboard (React + Tailwind + TypeScript)
+1) ARQUITECTURA DEL SISTEMA (Mermaid)
+mermaid
+flowchart LR
+subgraph Clients
+W[Web App - Next.js]
+M[Mobile App - React Native Expo]
+A[Admin Console]
+end
+subgraph Edge
+CDN[CDN/WAF]
+APIGW[API Gateway + Rate Limit + TLS 1.3]
+IDP[SSO IdP Azure AD / Google Workspace]
+end
+subgraph Core["Core Platform (Kubernetes)"]
+AUTH[Auth Service\nMFA/2FA + OAuth2/SAML]
+ITAM[ITAM API Service (NestJS)\nCMDB/SAM/Lifecycle]
+DISC[Discovery Orchestrator (NestJS)\nJobs + Rules + Dedupe]
+SCAN[High-Concurrency Scanner (Python/Go)\nActive/Passive Discovery]
+FIN[Financial Engine\nDepreciation + Cost Center]
+AI[AI Service\nPredictive/OCR/Chatbot]
+FILES[Object Storage Service\nCertificates, invoices]
+AUD[Audit Log Service\nImmutable event trail]
+NOTIF[Notification Service\nEmail/SMS/Push/Webhook]
+end
+subgraph Data
+PG[(PostgreSQL\nCMDB + Finance + RBAC + Audit Index)]
+REDIS[(Redis\nCache + Session + Queue)]
+MQ[(Message Bus\nKafka/Rabbit/SQS)]
+NEO[(Neo4j optional\nDependency graph)]
+S3[(Object Storage\nAES-256 + KMS)]
+SIEM[(SIEM / SOC\nSecurity telemetry)]
+end
+W --> CDN --> APIGW
+M --> CDN --> APIGW
+A --> CDN --> APIGW
+APIGW --> AUTH
+APIGW --> ITAM
+APIGW --> DISC
+APIGW --> AI
+AUTH <--> IDP
+ITAM <--> PG
+ITAM <--> REDIS
+ITAM --> MQ
+DISC <--> REDIS
+DISC --> MQ
+MQ --> SCAN
+SCAN --> MQ
+MQ --> DISC
+DISC --> ITAM
+ITAM --> AUD
+AUD --> PG
+ITAM --> FIN
+FIN --> PG
+AI --> PG
+AI --> S3
+ITAM --> FILES
+FILES --> S3
+ITAM --> NEO
+SCAN --> NEO
+AUTH --> SIEM
+APIGW --> SIEM
+AUD --> SIEM
+Notas clave de arquitectura
+- Multi-tenant lógico (tenant_id en todas las tablas críticas + RLS opcional).
+- Flujo discovery desacoplado por cola (no bloquear API).
+- Auditoría inmutable tipo append-only.
+- Módulo AI aislado (fácil desactivar por cumplimiento/región).
+2) ESQUEMA DE BASE DE DATOS RELACIONAL (PostgreSQL – SQL)
+(Tablas principales solicitadas + soporte mínimo RBAC y multi-tenant)
+sql
+-- Extensiones recomendadas
+CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- gen_random_uuid()
+-- Tenants (SaaS B2B)
+CREATE TABLE tenants (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+name VARCHAR(160) NOT NULL,
+slug VARCHAR(80) UNIQUE NOT NULL,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- Locations
+CREATE TABLE locations (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+name VARCHAR(120) NOT NULL,
+code VARCHAR(40),
+country VARCHAR(80),
+city VARCHAR(80),
+address_line1 VARCHAR(160),
+address_line2 VARCHAR(160),
+is_active BOOLEAN NOT NULL DEFAULT TRUE,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, name),
+UNIQUE (tenant_id, code)
+);
+-- Users
+CREATE TABLE users (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+email VARCHAR(190) NOT NULL,
+full_name VARCHAR(140) NOT NULL,
+role VARCHAR(50) NOT NULL CHECK (role IN ('super_admin','it_admin','asset_manager','security_analyst','auditor','employee')),
+mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+sso_provider VARCHAR(40), -- azure_ad, google, local
+status VARCHAR(30) NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive','suspended')),
+last_login_at TIMESTAMPTZ,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, email)
+);
+-- Assets (CMDB source of truth)
+CREATE TABLE assets (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+asset_tag VARCHAR(80) NOT NULL,
+serial_number VARCHAR(120),
+hostname VARCHAR(120),
+ip_address INET,
+mac_address MACADDR,
+asset_type VARCHAR(40) NOT NULL CHECK (asset_type IN ('laptop','desktop','server','network','iot','ot','mobile','virtual_machine','cloud_resource','other')),
+vendor VARCHAR(80),
+model VARCHAR(120),
+operating_system VARCHAR(120),
+status VARCHAR(30) NOT NULL DEFAULT 'in_use' CHECK (status IN ('in_use','in_stock','repair','retired','disposed','lost')),
+criticality VARCHAR(20) NOT NULL DEFAULT 'medium' CHECK (criticality IN ('low','medium','high','critical')),
+owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+purchase_date DATE,
+warranty_end_date DATE,
+depreciation_end_date DATE,
+purchase_cost NUMERIC(14,2) DEFAULT 0,
+current_book_value NUMERIC(14,2) DEFAULT 0,
+last_seen_at TIMESTAMPTZ, -- discovery heartbeat
+source VARCHAR(30) NOT NULL DEFAULT 'manual' CHECK (source IN ('manual','discovery_active','discovery_passive','api_import')),
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, asset_tag),
+UNIQUE (tenant_id, serial_number)
+);
+-- Software Licenses (SAM)
+CREATE TABLE software_licenses (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+software_name VARCHAR(140) NOT NULL,
+vendor VARCHAR(120),
+license_type VARCHAR(40) NOT NULL CHECK (license_type IN ('per_user','per_device','concurrent','subscription','enterprise')),
+total_seats INTEGER NOT NULL CHECK (total_seats >= 0),
+assigned_seats INTEGER NOT NULL DEFAULT 0 CHECK (assigned_seats >= 0),
+active_agents INTEGER NOT NULL DEFAULT 0 CHECK (active_agents >= 0),
+inactive_agents INTEGER NOT NULL DEFAULT 0 CHECK (inactive_agents >= 0),
+unit_cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+renewal_date DATE,
+auto_renew BOOLEAN NOT NULL DEFAULT FALSE,
+status VARCHAR(30) NOT NULL DEFAULT 'active' CHECK (status IN ('active','expiring','expired','suspended')),
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- Audit Logs (inmutable / append-only)
+CREATE TABLE audit_logs (
+id BIGSERIAL PRIMARY KEY,
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+event_id UUID NOT NULL DEFAULT gen_random_uuid(),
+actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+entity_type VARCHAR(60) NOT NULL, -- assets, software_licenses, users...
+entity_id UUID NOT NULL,
+action VARCHAR(40) NOT NULL, -- create, update, delete, assign, discover...
+before_data JSONB,
+after_data JSONB,
+metadata JSONB,
+ip_address INET,
+user_agent TEXT,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE(event_id)
+);
+-- Índices recomendados
+CREATE INDEX idx_assets_tenant_status ON assets(tenant_id, status);
+CREATE INDEX idx_assets_tenant_last_seen ON assets(tenant_id, last_seen_at DESC);
+CREATE INDEX idx_assets_tenant_owner ON assets(tenant_id, owner_user_id);
+CREATE INDEX idx_licenses_tenant_status ON software_licenses(tenant_id, status);
+CREATE INDEX idx_audit_tenant_entity_created ON audit_logs(tenant_id, entity_type, entity_id, created_at DESC);
+-- Trigger updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+NEW.updated_at = NOW();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_users_updated BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_locations_updated BEFORE UPDATE ON locations
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_assets_updated BEFORE UPDATE ON assets
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_licenses_updated BEFORE UPDATE ON software_licenses
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+-- Protección de inmutabilidad en audit_logs (no UPDATE/DELETE)
+CREATE OR REPLACE FUNCTION prevent_audit_log_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+RAISE EXCEPTION 'audit_logs is append-only';
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_audit_no_update
+BEFORE UPDATE ON audit_logs
+FOR EACH ROW EXECUTE FUNCTION prevent_audit_log_mutation();
+CREATE TRIGGER trg_audit_no_delete
+BEFORE DELETE ON audit_logs
+FOR EACH ROW EXECUTE FUNCTION prevent_audit_log_mutation();
+---
+3) ESTRUCTURA DE CARPETAS (Monorepo recomendado)
+txt
+comptrol-mef/
+apps/
+web/ # Next.js + Tailwind
+src/
+app/
+components/
+features/dashboard/
+lib/
+store/
+mobile/ # Expo React Native
+src/
+screens/
+components/
+services/
+store/
+api/ # NestJS core API
+src/
+modules/
+auth/
+users/
+assets/
+discovery/
+licenses/
+locations/
+audit/
+finance/
+common/
+guards/
+interceptors/
+filters/
+decorators/
+config/
+main.ts
+scanner/ # Python/Go high-concurrency scanner
+cmd/
+internal/
+pkg/
+api/
+packages/
+shared-types/ # DTOs, domain types
+ui-kit/ # Design system reusable
+eslint-config/
+tsconfig/
+infra/
+docker/
+k8s/
+base/
+overlays/
+terraform/
+github-actions/
+docs/
+architecture/
+adr/
+api/
+scripts/
+.github/workflows/
+pnpm-workspace.yaml
+turbo.json
+README.md
+---
+4) CÓDIGO BACKEND (NestJS) – POST /api/v1/assets/discovery
+ts
+// apps/api/src/modules/discovery/dto/discovery-ingest.dto.ts
+import { IsEnum, IsIP, IsMACAddress, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+export enum DiscoverySource {
+ACTIVE = 'discovery_active',
+PASSIVE = 'discovery_passive',
+}
+export class DiscoveryIngestDto {
+@IsUUID()
+tenantId!: string;
+@IsOptional()
+@IsString()
+@MaxLength(120)
+hostname?: string;
+@IsOptional()
+@IsIP()
+ipAddress?: string;
+@IsOptional()
+@IsMACAddress()
+macAddress?: string;
+@IsOptional()
+@IsString()
+@MaxLength(120)
+serialNumber?: string;
+@IsString()
+@MaxLength(40)
+assetType!: string; // idealmente enum interno
+@IsOptional()
+@IsString()
+@MaxLength(80)
+vendor?: string;
+@IsOptional()
+@IsString()
+@MaxLength(120)
+model?: string;
+@IsEnum(DiscoverySource)
+source!: DiscoverySource;
+}
+ts
+// apps/api/src/modules/discovery/discovery.service.ts
+import { Injectable, Logger } from '@nestjs/common';
+import { DiscoveryIngestDto } from './dto/discovery-ingest.dto';
+/**
+* Simulación de persistencia.
+* En producción: repositorio (Prisma/TypeORM) + transacción + outbox event.
+*/
+@Injectable()
+export class DiscoveryService {
+private readonly logger = new Logger(DiscoveryService.name);
+async ingestAsset(dto: DiscoveryIngestDto) {
+// 1) Fingerprint para deduplicación (prioridad: serial > mac > hostname+ip)
+const fingerprint =
+dto.serialNumber?.trim() ||
+dto.macAddress?.toLowerCase() ||
+`${dto.hostname ?? 'unknown'}|${dto.ipAddress ?? 'unknown'}`;
+// 2) Simular "upsert"
+const simulatedAsset = {
+id: crypto.randomUUID(),
+tenantId: dto.tenantId,
+assetTag: `AUTO-${Date.now()}`,
+hostname: dto.hostname ?? null,
+ipAddress: dto.ipAddress ?? null,
+macAddress: dto.macAddress ?? null,
+serialNumber: dto.serialNumber ?? null,
+assetType: dto.assetType,
+vendor: dto.vendor ?? null,
+model: dto.model ?? null,
+source: dto.source,
+status: 'in_use',
+lastSeenAt: new Date().toISOString(),
+createdAt: new Date().toISOString(),
+updatedAt: new Date().toISOString(),
+fingerprint,
+};
+this.logger.log(`Asset discovered tenant=${dto.tenantId} fp=${fingerprint}`);
+// 3) Simular evento de auditoría
+const auditEvent = {
+action: 'discover',
+entityType: 'assets',
+entityId: simulatedAsset.id,
+afterData: simulatedAsset,
+createdAt: new Date().toISOString(),
+};
+return { asset: simulatedAsset, auditEvent };
+}
+}
+ts
+// apps/api/src/modules/discovery/discovery.controller.ts
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { DiscoveryIngestDto } from './dto/discovery-ingest.dto';
+import { DiscoveryService } from './discovery.service';
+@Controller('api/v1/assets')
+export class DiscoveryController {
+constructor(private readonly discoveryService: DiscoveryService) {}
+/**
+* Endpoint de ingesta de descubrimiento de activos (activo/pasivo).
+* Recomendado proteger con JWT + mTLS/API key entre scanner -> API.
+*/
+@Post('discovery')
+@HttpCode(HttpStatus.CREATED)
+async ingestDiscovery(@Body() dto: DiscoveryIngestDto) {
+const result = await this.discoveryService.ingestAsset(dto);
+return {
+success: true,
+message: 'Asset discovery ingested successfully',
+data: result.asset,
+audit: result.auditEvent,
+};
+}
+}
+ts
+// apps/api/src/modules/discovery/discovery.module.ts
+import { Module } from '@nestjs/common';
+import { DiscoveryController } from './discovery.controller';
+import { DiscoveryService } from './discovery.service';
+@Module({
+controllers: [DiscoveryController],
+providers: [DiscoveryService],
+exports: [DiscoveryService],
+})
+export class DiscoveryModule {}
+---
+5) CÓDIGO FRONTEND (Dashboard Next.js + Tailwind + TS)
+tsx
+// apps/web/src/features/dashboard/components/ItamKpiDashboard.tsx
+import React from 'react';
+type KpiKey = 'totalAssets' | 'inactiveLicenses' | 'ewasteCandidates' | 'inventoryValue';
+interface DashboardMetrics {
+totalAssets: number;
+inactiveLicenses: number;
+ewasteCandidates: number;
+inventoryValue: number; // USD (puedes adaptar a PEN)
+}
+interface KpiCardProps {
+label: string;
+value: string;
+tone: 'neutral' | 'warning' | 'danger' | 'success';
+}
+const toneMap: Record<KpiCardProps['tone'], string> = {
+neutral: 'border-slate-200 bg-white',
+warning: 'border-amber-300 bg-amber-50',
+danger: 'border-rose-300 bg-rose-50',
+success: 'border-emerald-300 bg-emerald-50',
+};
+function KpiCard({ label, value, tone }: KpiCardProps) {
+return (
+<div className={`rounded-2xl border p-5 shadow-sm ${toneMap[tone]}`}>
+<p className="text-sm text-slate-600">{label}</p>
+<p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+</div>
+);
+}
+function formatCurrency(amount: number, currency = 'USD') {
+return new Intl.NumberFormat('es-PE', {
+style: 'currency',
+currency,
+maximumFractionDigits: 0,
+}).format(amount);
+}
+export interface ItamKpiDashboardProps {
+metrics: DashboardMetrics;
+}
+export const ItamKpiDashboard: React.FC<ItamKpiDashboardProps> = ({ metrics }) => {
+const cards: Array<{ key: KpiKey; label: string; value: string; tone: KpiCardProps['tone'] }> = [
+{
+key: 'totalAssets',
+label: 'Total de Activos',
+value: metrics.totalAssets.toLocaleString('es-PE'),
+tone: 'neutral',
+},
+{
+key: 'inactiveLicenses',
+label: 'Licencias Inactivas',
+value: metrics.inactiveLicenses.toLocaleString('es-PE'),
+tone: metrics.inactiveLicenses > 0 ? 'warning' : 'success',
+},
+{
+key: 'ewasteCandidates',
+label: 'Equipos para e-Waste',
+value: metrics.ewasteCandidates.toLocaleString('es-PE'),
+tone: metrics.ewasteCandidates > 0 ? 'danger' : 'success',
+},
+{
+key: 'inventoryValue',
+label: 'Valor Total del Inventario',
+value: formatCurrency(metrics.inventoryValue, 'USD'),
+tone: 'neutral',
+},
+];
+return (
+<section className="space-y-4">
+<div>
+<h2 className="text-xl font-semibold text-slate-900">Panel ITAM</h2>
+<p className="text-sm text-slate-600">
+Vista ejecutiva de activos, optimización de licencias y ciclo de vida.
+</p>
+</div>
+<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+{cards.map((card) => (
+<KpiCard key={card.key} label={card.label} value={card.value} tone={card.tone} />
+))}
+</div>
+</section>
+);
+};
+Ejemplo de uso:
+tsx
+// apps/web/src/app/dashboard/page.tsx
+import { ItamKpiDashboard } from '@/features/dashboard/components/ItamKpiDashboard';
+export default function DashboardPage() {
+const metrics = {
+totalAssets: 1842,
+inactiveLicenses: 137,
+ewasteCandidates: 42,
+inventoryValue: 1285000,
+};
+return (
+<main className="p-6">
+<ItamKpiDashboard metrics={metrics} />
+</main>
+);
+}
+---
+Recap (arquitecto):
+- Base sólida: event-driven discovery + CMDB central + auditoría inmutable + multi-tenant.
+- El SQL ya cubre tus tablas core y cumplimiento base (trazabilidad).
+- El código entregado te deja arrancar un MVP enterprise-ready rápidamente.
+Si te parece, siguiente paso te doy Fase 2:
+- RBAC granular (tablas roles/permissions),
+- modelo de depreciación contable,
+- y pipeline GitHub Actions + Docker/K8s listo para deploy.
+[JuvinChat] Perfecto, seguimos con Fase 2: voy a aterrizar RBAC granular, depreciación contable y pipeline CI/CD + Docker + Kubernetes para que Comptrol‑Mef quede listo para entorno enterprise.
+- [ ] Preguntas rápidas (para afinar luego, no bloquean):
+1) ¿Norma contable principal: NIIF/IFRS o política interna?
+2) ¿Despliegue objetivo inicial: AWS EKS o Azure AKS?
+3) ¿Quieres autorización RBAC por rol puro o rol + atributos (ABAC ligero)?
+---
+- [ ] 1) RBAC GRANULAR (modelo recomendado)
+### 1.1 Tablas SQL (roles, permisos y alcance por recurso)
+sql
+-- Catálogo de permisos (acción + recurso)
+CREATE TABLE permissions (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+resource VARCHAR(80) NOT NULL, -- assets, licenses, users, audit_logs...
+action VARCHAR(40) NOT NULL, -- create, read, update, delete, approve, export
+description TEXT,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE(resource, action)
+);
+-- Roles por tenant (evita rol global rígido)
+CREATE TABLE roles (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+name VARCHAR(80) NOT NULL, -- IT_ADMIN, ASSET_MANAGER...
+description TEXT,
+is_system BOOLEAN NOT NULL DEFAULT FALSE,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE(tenant_id, name)
+);
+-- N:N roles-permissions
+CREATE TABLE role_permissions (
+role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+effect VARCHAR(10) NOT NULL DEFAULT 'allow' CHECK (effect IN ('allow','deny')),
+PRIMARY KEY(role_id, permission_id)
+);
+-- N:N users-roles
+CREATE TABLE user_roles (
+user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+PRIMARY KEY(user_id, role_id)
+);
+-- Restricción de alcance (scope) opcional por ubicación/cost center
+CREATE TABLE policy_scopes (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+scope_type VARCHAR(40) NOT NULL CHECK (scope_type IN ('location','cost_center','asset_type','all')),
+scope_value VARCHAR(120), -- ej: location_id o "laptop"
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+### 1.2 Semilla mínima de permisos
+- assets: read|create|update|delete|assign|retire|dispose|export
+- licenses: read|create|update|optimize|export
+- audit_logs: read|export
+- users: read|invite|suspend
+- finance: read|depreciation_run|close_period
+### 1.3 Guard de autorización (NestJS, idea)
+- JWT -> extraer tenantId, userId
+- Resolver roles del usuario
+- Resolver permisos efectivos (deny gana a allow)
+- Validar scope (ej. solo location_id = X)
+---
+- [ ] 2) DEPRECIACIÓN CONTABLE (motor inicial)
+### 2.1 Extensiones al esquema assets
+sql
+ALTER TABLE assets
+ADD COLUMN depreciation_method VARCHAR(30) DEFAULT 'straight_line'
+CHECK (depreciation_method IN ('straight_line','declining_balance')),
+ADD COLUMN useful_life_months INTEGER DEFAULT 36 CHECK (useful_life_months > 0),
+ADD COLUMN salvage_value NUMERIC(14,2) DEFAULT 0 CHECK (salvage_value >= 0),
+ADD COLUMN depreciation_start_date DATE;
+### 2.2 Tabla de movimientos contables de depreciación
+sql
+CREATE TABLE asset_depreciation_entries (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+period_year INTEGER NOT NULL,
+period_month INTEGER NOT NULL CHECK (period_month BETWEEN 1 AND 12),
+depreciation_amount NUMERIC(14,2) NOT NULL CHECK (depreciation_amount >= 0),
+opening_book_value NUMERIC(14,2) NOT NULL,
+closing_book_value NUMERIC(14,2) NOT NULL,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE(tenant_id, asset_id, period_year, period_month)
+);
+### 2.3 Lógica base (línea recta)
+Fórmula mensual:
+(purchase_cost - salvage_value) / useful_life_months
+Reglas:
+- No depreciar activos disposed/lost.
+- Nunca bajar de salvage_value.
+- Si un mes ya está calculado, no duplicar (idempotencia por UNIQUE).
+---
+- [ ] 3) CI/CD con GitHub Actions (monorepo)
+### 3.1 Pipeline principal (.github/workflows/ci-cd.yml)
+yaml
+name: CI-CD
+on:
+push:
+branches: [main]
+pull_request:
+jobs:
+test-build:
+runs-on: ubuntu-latest
+strategy:
+matrix:
+app: [api, web]
+steps:
+- uses: actions/checkout@v4
+- uses: pnpm/action-setup@v4
+with: { version: 9 }
+- uses: actions/setup-node@v4
+with:
+node-version: 20
+cache: 'pnpm'
+- run: pnpm install --frozen-lockfile
+- run: pnpm --filter ./apps/${{ matrix.app }} lint
+- run: pnpm --filter ./apps/${{ matrix.app }} test -- --runInBand
+- run: pnpm --filter ./apps/${{ matrix.app }} build
+docker:
+needs: test-build
+runs-on: ubuntu-latest
+if: github.ref == 'refs/heads/main'
+permissions:
+contents: read
+packages: write
+steps:
+- uses: actions/checkout@v4
+- uses: docker/setup-buildx-action@v3
+- uses: docker/login-action@v3
+with:
+registry: ghcr.io
+username: ${{ github.actor }}
+password: ${{ secrets.GITHUB_TOKEN }}
+- uses: docker/build-push-action@v6
+with:
+context: .
+file: ./infra/docker/api.Dockerfile
+push: true
+tags: ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+- uses: docker/build-push-action@v6
+with:
+context: .
+file: ./infra/docker/web.Dockerfile
+push: true
+tags: ghcr.io/${{ github.repository }}/web:${{ github.sha }}
+deploy:
+needs: docker
+runs-on: ubuntu-latest
+if: github.ref == 'refs/heads/main'
+steps:
+- uses: actions/checkout@v4
+- name: Set kube context
+run: |
+echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > kubeconfig
+export KUBECONFIG=$PWD/kubeconfig
+kubectl version --client
+- name: Deploy manifests
+run: |
+export KUBECONFIG=$PWD/kubeconfig
+kubectl -n comptrol set image deployment/api api=ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+kubectl -n comptrol set image deployment/web web=ghcr.io/${{ github.repository }}/web:${{ github.sha }}
+kubectl -n comptrol rollout status deployment/api --timeout=180s
+kubectl -n comptrol rollout status deployment/web --timeout=180s
+---
+- [ ] 4) Dockerfiles base
+### infra/docker/api.Dockerfile
+dockerfile
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/package.json
+RUN corepack enable && pnpm install --frozen-lockfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY . .
+RUN corepack enable && pnpm install --frozen-lockfile
+RUN pnpm --filter ./apps/api build
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/apps/api/dist ./dist
+COPY --from=build /app/apps/api/package.json ./package.json
+RUN corepack enable && pnpm install --prod --frozen-lockfile || true
+EXPOSE 3001
+CMD ["node", "dist/main.js"]
+---
+- [ ] 5) Kubernetes base (extracto)
+### infra/k8s/base/api-deployment.yaml
+yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: api
+namespace: comptrol
+spec:
+replicas: 2
+selector:
+matchLabels: { app: api }
+template:
+metadata:
+labels: { app: api }
+spec:
+containers:
+- name: api
+image: ghcr.io/org/comptrol/api:latest
+ports:
+- containerPort: 3001
+envFrom:
+- secretRef: { name: comptrol-secrets }
+readinessProbe:
+httpGet: { path: /health, port: 3001 }
+initialDelaySeconds: 10
+livenessProbe:
+httpGet: { path: /health, port: 3001 }
+initialDelaySeconds: 20
+resources:
+requests: { cpu: "200m", memory: "256Mi" }
+limits: { cpu: "1", memory: "1Gi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+name: api
+namespace: comptrol
+spec:
+selector: { app: api }
+ports:
+- port: 80
+targetPort: 3001
+---
+- [ ] 6) Seguridad y cumplimiento (checklist fase 2)
+- [ ] Activar MFA obligatoria para roles privilegiados (it_admin, security_analyst).
+- [ ] TLS 1.3 extremo a extremo (Ingress + internal mTLS ideal).
+- [ ] Secrets fuera del repo (AWS Secrets Manager / Azure Key Vault).
+- [ ] Logs de auditoría enviados a SIEM (retención 1+ año según política).
+- [ ] Backups cifrados + pruebas de restore trimestrales.
+- [ ] Política de mínimo privilegio en RBAC y K8s (ServiceAccounts separadas).
+---
+Ejemplo rápido (aplicar lo aprendido):
+Un asset_manager puede read/update assets solo en location=Lima-HQ, pero no delete ni export audit_logs.
+Eso se logra con:
+1) rol + permisos allow,
+2) policy_scopes(location, Lima-HQ),
+3) guard en API validando scope por request.
+Práctica rápida (siguiente mini-tarea):
+1) Crear rol AUDITOR.
+2) Dar permisos audit_logs:read/export y assets:read.
+3) Verificar que no pueda assets:update.
+Recap:
+Fase 2 ya te deja con base enterprise real: autorización robusta, depreciación auditable e infraestructura CI/CD desplegable.
+Si quieres, en la siguiente te entrego Fase 3: eventos/outbox, colas de discovery en producción (reintentos + DLQ), y módulo OCR/IA con contrato API.
+[JuvinChat] Perfecto. Vamos con Fase 3 para llevar Comptrol‑Mef a operación real:
+outbox/event-driven confiable, discovery production-grade (retry + DLQ) y módulo IA/OCR con contratos API.
+- [ ] Resumen de lo que te entrego
+- [x] Diseño de eventos y patrón Outbox
+- [x] SQL para outbox + consumidores idempotentes
+- [x] Flujo discovery con retries, backoff, DLQ
+- [x] Contratos API para OCR + IA predictiva + chatbot interno
+- [x] Código inicial (NestJS producer/worker + contrato FastAPI sugerido)
+---
+- [ ] 1) EVENT-DRIVEN CON OUTBOX (consistencia fuerte sin 2PC)
+### 1.1 Arquitectura de eventos (Mermaid)
+mermaid
+flowchart LR
+API[NestJS ITAM API] --> TX[(PostgreSQL Tx)]
+TX --> O[(Outbox Table)]
+O --> PUB[Outbox Publisher Worker]
+PUB --> BUS[(Kafka/Rabbit/SQS)]
+BUS --> DISC[Discovery Processor]
+BUS --> FIN[Finance/Depreciation Processor]
+BUS --> AI[AI/OCR Processor]
+BUS --> AUD[Audit Projector]
+DISC --> PG[(PostgreSQL)]
+FIN --> PG
+AI --> PG
+AUD --> PG
+DISC --> DLQ[(Dead Letter Queue)]
+AI --> DLQ
+### 1.2 Eventos de dominio mínimos
+- asset.discovered.v1
+- asset.updated.v1
+- license.inactive_detected.v1
+- employee.offboarded.v1
+- asset.ewaste.candidate_marked.v1
+- invoice.ocr.requested.v1
+- telemetry.ingested.v1
+- maintenance.prediction.generated.v1
+---
+- [ ] 2) SQL: OUTBOX + IDEMPOTENCIA + DLQ
+sql
+-- Outbox transaccional
+CREATE TABLE outbox_events (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+aggregate_type VARCHAR(80) NOT NULL, -- asset, license, employee...
+aggregate_id UUID NOT NULL,
+event_type VARCHAR(120) NOT NULL, -- asset.discovered.v1
+event_version INTEGER NOT NULL DEFAULT 1,
+payload JSONB NOT NULL,
+headers JSONB,
+status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','published','failed')),
+attempts INTEGER NOT NULL DEFAULT 0,
+next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+published_at TIMESTAMPTZ,
+last_error TEXT,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_outbox_pending ON outbox_events(status, next_attempt_at);
+CREATE INDEX idx_outbox_tenant_created ON outbox_events(tenant_id, created_at DESC);
+-- Idempotencia en consumidores (evita doble procesamiento)
+CREATE TABLE consumer_offsets (
+id BIGSERIAL PRIMARY KEY,
+consumer_name VARCHAR(120) NOT NULL,
+message_id UUID NOT NULL,
+processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE(consumer_name, message_id)
+);
+-- DLQ en DB (opcional, además de cola DLQ externa)
+CREATE TABLE dead_letter_events (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+original_message_id UUID,
+tenant_id UUID,
+consumer_name VARCHAR(120) NOT NULL,
+event_type VARCHAR(120) NOT NULL,
+payload JSONB NOT NULL,
+error TEXT NOT NULL,
+attempts INTEGER NOT NULL,
+failed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+---
+- [ ] 3) DISCOVERY PRODUCTION-GRADE (retry/backoff/DLQ)
+### 3.1 Política recomendada
+- Retry: 5 intentos
+- Backoff exponencial + jitter: 5s, 15s, 45s, 120s, 300s
+- Timeout por job scanner: 30s-60s
+- Circuit breaker por segmento de red
+- DLQ después de agotar reintentos
+- Idempotency key: hash (tenant + serial/mac/ip+hostname)
+### 3.2 Flujo
+1) API recibe discovery -> guarda asset/upsert + outbox en misma tx
+2) Publisher empuja a bus
+3) Processor intenta enriquecer/normalizar
+4) Si falla transitorio -> requeue con backoff
+5) Si falla permanente -> DLQ + alerta SOC/IT Ops
+---
+- [ ] 4) CÓDIGO BASE: OUTBOX PUBLISHER (NestJS)
+ts
+// apps/api/src/modules/outbox/outbox.publisher.ts
+import { Injectable, Logger } from '@nestjs/common';
+import { DataSource } from 'typeorm';
+@Injectable()
+export class OutboxPublisher {
+private readonly logger = new Logger(OutboxPublisher.name);
+constructor(private readonly ds: DataSource) {}
+// Ejecutar cada X segundos via cron interno o worker separado
+async publishBatch(limit = 100): Promise<number> {
+return this.ds.transaction(async (manager) => {
+const rows = await manager.query(
+`
+SELECT *
+FROM outbox_events
+WHERE status = 'pending' AND next_attempt_at <= NOW()
+ORDER BY created_at ASC
+LIMIT $1
+FOR UPDATE SKIP LOCKED
+`,
+[limit],
+);
+let published = 0;
+for (const evt of rows) {
+try {
+// TODO: enviar a Kafka/Rabbit/SQS
+// await this.bus.publish(evt.event_type, { id: evt.id, ...evt.payload });
+await manager.query(
+`UPDATE outbox_events
+SET status='published', published_at=NOW(), attempts=attempts+1
+WHERE id=$1`,
+[evt.id],
+);
+published++;
+} catch (err: any) {
+const attempts = Number(evt.attempts) + 1;
+const delaySec = Math.min(300, Math.pow(3, attempts)); // backoff simple
+await manager.query(
+`UPDATE outbox_events
+SET attempts=$2,
+status=CASE WHEN $2 >= 5 THEN 'failed' ELSE 'pending' END,
+next_attempt_at=NOW() + ($3 || ' seconds')::interval,
+last_error=$4
+WHERE id=$1`,
+[evt.id, attempts, delaySec, String(err?.message ?? err)],
+);
+if (attempts >= 5) {
+await manager.query(
+`INSERT INTO dead_letter_events
+(original_message_id, tenant_id, consumer_name, event_type, payload, error, attempts)
+VALUES ($1, $2, 'outbox_publisher', $3, $4::jsonb, $5, $6)`,
+[
+evt.id,
+evt.tenant_id,
+evt.event_type,
+JSON.stringify(evt.payload),
+String(err?.message ?? err),
+attempts,
+],
+);
+}
+}
+}
+this.logger.log(`Outbox published=${published}/${rows.length}`);
+return published;
+});
+}
+}
+---
+- [ ] 5) CONTRATOS API – OCR / Predictive AI / Chatbot
+## 5.1 OCR de factura (asíncrono recomendado)
+POST /api/v1/ai/ocr/invoices
+Request:
+json
+{
+"tenantId": "uuid",
+"fileUrl": "s3://bucket/invoices/inv-123.pdf",
+"supplierHint": "Dell"
+}
+Response:
+json
+{
+"jobId": "uuid",
+"status": "queued"
+}
+GET /api/v1/ai/ocr/invoices/{jobId} -> estado + resultado:
+json
+{
+"jobId": "uuid",
+"status": "completed",
+"result": {
+"invoiceNumber": "F001-12345",
+"issueDate": "2026-03-01",
+"currency": "USD",
+"totalAmount": 5400.50,
+"items": [
+{"description":"Laptop X", "qty":10, "unitPrice":540.05, "serialNumbers":[]}
+],
+"confidence": 0.93
+}
+}
+## 5.2 Predicción de mantenimiento
+POST /api/v1/ai/predictive/score-assets
+json
+{
+"tenantId": "uuid",
+"assetIds": ["uuid1", "uuid2"],
+"featuresWindowDays": 90
+}
+Respuesta:
+json
+{
+"predictions": [
+{"assetId":"uuid1","riskScore":0.82,"recommendedAction":"replace_fan","etaDays":21}
+]
+}
+## 5.3 Chatbot interno (service desk IT)
+POST /api/v1/ai/chatbot/query
+json
+{
+"tenantId": "uuid",
+"userId": "uuid",
+"message": "Necesito una laptop para onboarding de analista",
+"context": {"department":"Finance"}
+}
+---
+- [ ] 6) Esqueleto microservicio IA (FastAPI sugerido)
+py
+# apps/ai_service/main.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Optional
+from uuid import UUID, uuid4
+app = FastAPI(title="Comptrol-Mef AI Service")
+class OCRRequest(BaseModel):
+tenantId: UUID
+fileUrl: str
+supplierHint: Optional[str] = None
+@app.post("/v1/ocr/invoices")
+def ocr_invoice(req: OCRRequest):
+# TODO: enqueue Celery/RQ + OCR engine
+return {"jobId": str(uuid4()), "status": "queued"}
+class PredictReq(BaseModel):
+tenantId: UUID
+assetIds: List[UUID]
+featuresWindowDays: int = 90
+@app.post("/v1/predictive/score-assets")
+def score_assets(req: PredictReq):
+# TODO: model inference real
+preds = [{"assetId": str(a), "riskScore": 0.5, "recommendedAction": "inspect", "etaDays": 30} for a in req.assetIds]
+return {"predictions": preds}
+---
+- [ ] 7) Operación/SRE mínima para Fase 3
+- [ ] Correlation ID por request + event
+- [ ] OpenTelemetry (API + workers + AI service)
+- [ ] Métricas clave:
+- outbox lag
+- publish success rate
+- DLQ rate
+- discovery dedupe ratio
+- OCR latency p95
+- [ ] Alertas:
+- DLQ > umbral
+- jobs stuck > 10 min
+- scanner error burst
+---
+Ejemplo rápido (end-to-end):
+1) Scanner detecta host nuevo -> API POST /assets/discovery
+2) DB tx: assets upsert + outbox asset.discovered.v1
+3) Publisher lo manda a bus
+4) Consumer enriquece (vendor/model/risk)
+5) Audit projector guarda evento inmutable
+6) Si falla enrichment 5 veces -> DLQ + alerta
+Práctica mínima para ti (hoy):
+- [ ] Crear tablas outbox_events, consumer_offsets, dead_letter_events
+- [ ] Añadir worker OutboxPublisher.publishBatch()
+- [ ] Simular 1 evento asset.discovered.v1
+- [ ] Verificar idempotencia con consumer_offsets
+Recap:
+Con esta fase, Comptrol‑Mef deja de ser “API CRUD” y se convierte en plataforma robusta orientada a eventos, tolerante a fallos y lista para escalar módulos de discovery + IA.
+Si quieres, en Fase 4 te armo el módulo móvil (QR/barcode, auditoría física offline-first) + flujo e‑Waste con certificados y cadena de custodia.
+[JuvinChat] Perfecto, vamos con Fase 4: cerrar la operación física de ITAM con app móvil offline-first (QR/barcode) + flujo e‑Waste con cadena de custodia y certificados.
+Objetivo: auditorías rápidas en campo, cero pérdida de trazabilidad y cumplimiento fuerte.
+- [ ] Preguntas rápidas (para ajustar luego):
+1) ¿Tus auditorías son por sede fija o con técnicos móviles entre sedes?
+2) ¿Necesitas firma digital avanzada (eIDAS/PKI) o firma simple con evidencia?
+3) ¿El certificado de destrucción lo emite proveedor externo (PDF) o quieres plantilla propia?
+---
+## ✅ 1) Arquitectura Fase 4 (móvil + e‑Waste)
+mermaid
+flowchart LR
+RN[App Móvil Expo RN]
+API[NestJS API]
+SYNC[Sync Service]
+FILES[Files Service]
+PG[(PostgreSQL)]
+REDIS[(Redis Queue)]
+S3[(Object Storage)]
+OCR[AI OCR Service]
+EV[Event Bus]
+AUD[Audit Service]
+RN -->|scan QR/barcode, audit| API
+RN -->|offline queue| RN
+RN -->|sync batch| SYNC
+SYNC --> API
+API --> PG
+API --> EV
+EV --> AUD
+AUD --> PG
+API --> FILES
+FILES --> S3
+API --> OCR
+OCR --> API
+API --> REDIS
+---
+## ✅ 2) Diseño móvil (offline-first real)
+- [ ] Stack móvil
+- Expo + React Native + TypeScript
+- Estado: Zustand
+- Persistencia local: SQLite (expo-sqlite) + cola local
+- Scanner: expo-camera + expo-barcode-scanner (QR, Code128, EAN)
+- Sync resiliente: reintentos exponenciales + conflicto por versión
+- [ ] Modelo local mínimo
+- local_assets_cache
+- local_scan_events (pendientes de sync)
+- sync_cursor
+- local_user_session
+- [ ] Regla de sincronización
+- Cada scan crea evento local (PENDING)
+- Cuando hay red: batch POST /mobile/sync/scans
+- Servidor responde ACK + estado por item
+- Si conflicto (asset_version cambió), resolver con “server-wins + nota de conflicto”
+---
+## ✅ 3) SQL Fase 4 (físico + e‑Waste + custodia)
+sql
+-- Etiquetas físicas
+CREATE TABLE asset_labels (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+label_code VARCHAR(120) NOT NULL, -- QR payload / barcode value
+label_type VARCHAR(20) NOT NULL CHECK (label_type IN ('qr','barcode')),
+printed_at TIMESTAMPTZ,
+printed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+is_active BOOLEAN NOT NULL DEFAULT TRUE,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, label_code)
+);
+-- Eventos de escaneo físico (auditoría inventario)
+CREATE TABLE asset_scan_events (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+asset_id UUID REFERENCES assets(id) ON DELETE SET NULL,
+scanned_label_code VARCHAR(120) NOT NULL,
+scan_type VARCHAR(30) NOT NULL CHECK (scan_type IN ('inventory_audit','transfer','checkin','checkout','dispose_verify')),
+result VARCHAR(20) NOT NULL CHECK (result IN ('match','mismatch','unknown')),
+scanned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+scanned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+geo_lat NUMERIC(10,7),
+geo_lng NUMERIC(10,7),
+device_id VARCHAR(120),
+metadata JSONB
+);
+-- Flujo e-Waste / disposición final
+CREATE TABLE disposal_cases (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+status VARCHAR(30) NOT NULL CHECK (status IN ('requested','approved','in_transit','destroyed','closed','rejected')),
+reason VARCHAR(200),
+requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+approved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+approved_at TIMESTAMPTZ,
+vendor_name VARCHAR(140),
+pickup_date TIMESTAMPTZ,
+destroyed_at TIMESTAMPTZ,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, asset_id)
+);
+-- Cadena de custodia
+CREATE TABLE custody_events (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+disposal_case_id UUID NOT NULL REFERENCES disposal_cases(id) ON DELETE CASCADE,
+event_type VARCHAR(40) NOT NULL CHECK (event_type IN ('sealed','picked_up','transferred','received_vendor','destroyed')),
+actor_name VARCHAR(140) NOT NULL,
+actor_role VARCHAR(80),
+actor_signature_ref TEXT, -- URL o hash de firma
+event_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+location_text VARCHAR(160),
+evidence_ref TEXT, -- foto/video/doc
+notes TEXT
+);
+-- Certificados de destrucción (Data Destruction Certificate)
+CREATE TABLE destruction_certificates (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+disposal_case_id UUID NOT NULL REFERENCES disposal_cases(id) ON DELETE CASCADE,
+certificate_number VARCHAR(120) NOT NULL,
+issued_by VARCHAR(140) NOT NULL,
+issued_at TIMESTAMPTZ NOT NULL,
+file_ref TEXT NOT NULL, -- S3 URL
+checksum_sha256 VARCHAR(64) NOT NULL,
+verified BOOLEAN NOT NULL DEFAULT FALSE,
+verified_by UUID REFERENCES users(id) ON DELETE SET NULL,
+verified_at TIMESTAMPTZ,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, certificate_number)
+);
+---
+## ✅ 4) API contratos (móvil y e‑Waste)
+- [ ] Móvil
+- POST /api/v1/mobile/scans (single)
+- POST /api/v1/mobile/sync/scans (batch offline)
+- GET /api/v1/mobile/assets?updatedSince=... (delta sync)
+- POST /api/v1/assets/{id}/labels/print
+- [ ] e‑Waste
+- POST /api/v1/disposals (crear caso)
+- POST /api/v1/disposals/{id}/approve
+- POST /api/v1/disposals/{id}/custody-events
+- POST /api/v1/disposals/{id}/certificate (upload PDF + checksum)
+- POST /api/v1/disposals/{id}/close
+---
+## ✅ 5) Código inicial móvil (scanner + cola local, simplificado)
+tsx
+// apps/mobile/src/screens/ScanScreen.tsx
+import React, { useState } from 'react';
+import { View, Text, Button } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+export default function ScanScreen() {
+const [permission, requestPermission] = useCameraPermissions();
+const [lastCode, setLastCode] = useState<string | null>(null);
+if (!permission?.granted) {
+return (
+<View>
+<Text>Se requiere permiso de cámara.</Text>
+<Button title="Permitir" onPress={requestPermission} />
+</View>
+);
+}
+const onBarcodeScanned = async ({ data, type }: { data: string; type: string }) => {
+setLastCode(data);
+// TODO: guardar en SQLite como evento PENDING para sync
+// await saveLocalScanEvent({ code: data, barcodeType: type, scannedAt: new Date().toISOString() });
+};
+return (
+<View style={{ flex: 1 }}>
+<CameraView
+style={{ flex: 1 }}
+barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'ean13'] }}
+onBarcodeScanned={onBarcodeScanned}
+/>
+<View style={{ padding: 12 }}>
+<Text>Último código: {lastCode ?? '—'}</Text>
+</View>
+</View>
+);
+}
+---
+## ✅ 6) Backend endpoint batch sync (NestJS, ejemplo corto)
+ts
+// POST /api/v1/mobile/sync/scans
+// recibe scans offline y responde estado por item (ACK/CONFLICT/ERROR)
+type ScanSyncItem = {
+clientEventId: string;
+labelCode: string;
+scanType: 'inventory_audit' | 'transfer' | 'checkin' | 'checkout' | 'dispose_verify';
+scannedAt: string;
+locationId?: string;
+};
+type ScanSyncResponse = {
+clientEventId: string;
+status: 'ACK' | 'CONFLICT' | 'ERROR';
+serverEventId?: string;
+message?: string;
+};
+(En implementación real: validación DTO + transacción + upsert + audit log por item)
+---
+## ✅ 7) Seguridad/compliance específicos de Fase 4
+- [ ] Firma y hash SHA-256 de certificados almacenados
+- [ ] Evidencia multimedia cifrada (S3 + KMS, URLs firmadas)
+- [ ] Geolocalización opcional (consentimiento y minimización de datos)
+- [ ] Política de retención legal (certificados: 5–10 años según norma)
+- [ ] Doble aprobación para dispose en activos críticos
+---
+## Explicación rápida (simple → ejemplo → práctica → recap)
+Simple:
+Offline-first significa: primero guardas localmente, luego sincronizas sin perder eventos.
+Ejemplo:
+Técnico escanea 300 equipos sin internet en almacén → al recuperar red, sube lote con estado por cada scan.
+Práctica (siguiente paso mínimo):
+1) Crear tablas asset_scan_events, disposal_cases, custody_events, destruction_certificates.
+2) Implementar POST /mobile/sync/scans con respuesta por item.
+3) En app, persistir scans en SQLite con estado PENDING|SYNCED.
+Recap:
+Con Fase 4 ya tienes cerrada la parte operativa de campo y cumplimiento: inventario físico confiable + disposición final trazable + evidencia auditable.
+Si quieres, en Fase 5 te armo:
+- tablero ejecutivo completo (KPIs ITAM/SAM/e‑Waste),
+- alertas inteligentes (licencias ociosas, riesgo Shadow IT),
+- y roadmap de hardening para auditoría ISO 27001/SOC 2.
+[JuvinChat] Perfecto: en Fase 5 cerramos la capa de valor de negocio: tablero ejecutivo, alertas inteligentes y roadmap de hardening ISO 27001/SOC 2 para que Comptrol‑Mef pase de “sistema funcional” a “plataforma de decisión”.
+- [ ] Pregunta rápida (1): ¿Quieres que el dashboard financiero se muestre en USD, PEN o dual?
+---
+## ✅ FASE 5 — Entregables
+- [x] KPIs ejecutivos (ITAM/SAM/e‑Waste/seguridad)
+- [x] Motor de alertas inteligentes (reglas + score de riesgo)
+- [x] Esquema SQL para métricas/alertas
+- [x] Endpoint backend para feed ejecutivo
+- [x] Roadmap de hardening ISO 27001 / SOC 2 (90 días)
+---
+## 1) KPIs del tablero ejecutivo (recomendados)
+- [ ] ITAM Core
+- Total de activos
+- Activos no vistos > 30 días
+- Exactitud de inventario físico (% match auditoría)
+- MTTR de incidentes por tipo de activo
+- [ ] SAM / Finanzas
+- Licencias inactivas (% y monto desperdiciado mensual)
+- Cobertura antivirus/RMM activa (%)
+- Ahorro estimado por reclaim de licencias
+- Depreciación acumulada mensual/anual
+- Valor en libros vs valor de reposición
+- [ ] e‑Waste / Cumplimiento
+- Activos candidatos a e‑Waste
+- Casos en cadena de custodia abiertos
+- Certificados verificados / pendientes
+- Tiempo promedio de cierre de disposición
+- [ ] Ciber / Shadow IT
+- Dispositivos descubiertos no registrados (rogue ratio)
+- Activos críticos sin agente de seguridad
+- Riesgo por ubicación/departamento
+- Top 10 activos con mayor riesgo operativo
+---
+## 2) SQL base para analítica y alertas
+sql
+-- Snapshot diario de KPIs (para dashboard rápido)
+CREATE TABLE kpi_daily_snapshots (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+snapshot_date DATE NOT NULL,
+total_assets INTEGER NOT NULL DEFAULT 0,
+inactive_licenses INTEGER NOT NULL DEFAULT 0,
+inactive_license_cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+ewaste_candidates INTEGER NOT NULL DEFAULT 0,
+rogue_assets INTEGER NOT NULL DEFAULT 0,
+inventory_book_value NUMERIC(14,2) NOT NULL DEFAULT 0,
+coverage_antivirus_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (tenant_id, snapshot_date)
+);
+-- Alertas inteligentes (rule-based + score)
+CREATE TABLE smart_alerts (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+alert_type VARCHAR(60) NOT NULL, -- license_idle, rogue_asset, no_agent, ewaste_stalled
+severity VARCHAR(20) NOT NULL CHECK (severity IN ('low','medium','high','critical')),
+title VARCHAR(180) NOT NULL,
+description TEXT NOT NULL,
+entity_type VARCHAR(40), -- asset, license, disposal_case
+entity_id UUID,
+risk_score NUMERIC(5,2), -- 0..1 o 0..100 (definir estándar)
+status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open','acknowledged','resolved','dismissed')),
+detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+due_at TIMESTAMPTZ,
+resolved_at TIMESTAMPTZ,
+metadata JSONB,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_alerts_tenant_status_sev ON smart_alerts(tenant_id, status, severity, detected_at DESC);
+---
+## 3) Motor de alertas (reglas iniciales útiles)
+- [ ] Regla 1: Licencia inactiva costosa
+- Si inactive_agents > 0 y unit_cost * inactive_agents > umbral
+- Crear alerta license_idle (severity: high)
+- [ ] Regla 2: Shadow IT
+- Activo descubierto (source=discovery_*) sin owner ni clasificación > 7 días
+- Alerta rogue_asset (high/critical según segmento)
+- [ ] Regla 3: Cobertura de seguridad
+- Activo crítico sin heartbeat de antivirus/RMM > 48h
+- Alerta no_agent (critical)
+- [ ] Regla 4: e‑Waste estancado
+- disposal_case en in_transit > X días sin custody_event
+- Alerta ewaste_stalled (high)
+---
+## 4) Endpoint backend para dashboard ejecutivo (NestJS)
+ts
+// GET /api/v1/executive/dashboard?from=2026-03-01&to=2026-03-31
+type ExecutiveDashboardResponse = {
+summary: {
+totalAssets: number;
+inactiveLicenses: number;
+ewasteCandidates: number;
+inventoryValue: number;
+rogueAssets: number;
+};
+trends: Array<{
+date: string;
+inactiveLicenseCost: number;
+coverageAntivirusPct: number;
+}>;
+alerts: Array<{
+id: string;
+severity: 'low' | 'medium' | 'high' | 'critical';
+title: string;
+detectedAt: string;
+status: 'open' | 'acknowledged' | 'resolved' | 'dismissed';
+}>;
+};
+---
+## 5) Roadmap hardening 90 días (ISO 27001 / SOC 2)
+### Días 0–30 (Fundacional)
+- [ ] Inventario de activos y clasificación de datos (ya alineado a CMDB)
+- [ ] MFA obligatoria + SSO
+- [ ] Política de mínimo privilegio (RBAC productivo)
+- [ ] Centralizar logs (app, infra, auth, audit) en SIEM
+- [ ] Backup cifrado + prueba de restore
+### Días 31–60 (Control y evidencia)
+- [ ] Gestión formal de vulnerabilidades (SAST/DAST/dependency scan)
+- [ ] Rotación de secretos (KMS/KeyVault/Secrets Manager)
+- [ ] Hardening K8s (network policies, pod security, no root)
+- [ ] Runbooks de incidentes + tabletop exercise
+- [ ] Evidencia de cambios (tickets + PR + approvals)
+### Días 61–90 (Auditoría-ready)
+- [ ] Matriz de controles ISO 27001 Anexo A ↔ SOC 2 CC
+- [ ] Revisión de accesos trimestral (JML: joiner/mover/leaver)
+- [ ] Prueba DR/BCP
+- [ ] Métricas de cumplimiento (SLA alertas, MTTR, cobertura)
+- [ ] Paquete de evidencias para auditoría (automático)
+---
+## Ejemplo rápido (aplicado)
+Caso: 120 licencias inactivas de antivirus a $8/mes
+→ alerta high automática, ahorro potencial = $960/mes
+→ workflow: acknowledge → ejecutar reclaim → resolved con evidencia de acción.
+---
+## Práctica inmediata (siguiente paso mínimo)
+1) Crear tablas kpi_daily_snapshots y smart_alerts.
+2) Programar job diario que calcule snapshot por tenant.
+3) Exponer GET /api/v1/executive/dashboard.
+4) Mostrar en web: cards + tendencia 30 días + top alertas abiertas.
+---
+Recap:
+Fase 5 te da la capa ejecutiva completa: visibilidad financiera, reducción de riesgo y evidencia de cumplimiento.
+Si quieres, en Fase 6 te construyo el plan de implementación real (sprints de 8 semanas) con backlog priorizado, criterios de aceptación y definición de MVP v1.0.
+[JuvinChat] Perfecto, Jorge: en Fase 6 te dejo un plan de implementación realista de 8 semanas para salir con un MVP v1.0 usable en producción controlada.
+Enfoco en valor rápido: CMDB + Discovery + SAM + e‑Waste básico + Dashboard + seguridad mínima enterprise.
+- [ ] Preguntas de ajuste (rápidas):
+1) ¿Equipo disponible (número de devs backend/frontend/mobile/QA/DevOps)?
+2) ¿Piloto con cuántos clientes/tenants iniciales (1, 3, 5)?
+3) ¿Móvil entra en MVP o lo dejamos como Release 1.1?
+---
+## Plan 8 semanas (sprints)
+## Sprint 1 (Semana 1-2) — Fundaciones
+- [ ] Monorepo listo (apps web/api/mobile/scanner + packages)
+- [ ] CI básico (lint/test/build)
+- [ ] Auth base (JWT + RBAC inicial)
+- [ ] Modelo DB core (Users, Assets, Licenses, Locations, AuditLogs, Tenants)
+DoD (Definition of Done):
+- [ ] POST /assets y GET /assets funcionales
+- [ ] migraciones ejecutan limpio en staging
+- [ ] auditoría registra create/update
+---
+## Sprint 2 (Semana 3-4) — Discovery + CMDB operativa
+- [ ] Endpoint POST /api/v1/assets/discovery
+- [ ] deduplicación por serial/mac/fingerprint
+- [ ] Outbox + publisher inicial
+- [ ] vista web de activos descubiertos
+DoD:
+- [ ] ingestar 10k eventos discovery sin caída
+- [ ] idempotencia validada (no duplicados)
+- [ ] trazabilidad evento -> activo -> audit log
+---
+## Sprint 3 (Semana 5-6) — SAM + Finanzas + Alertas
+- [ ] módulo licencias (total, assigned, inactive)
+- [ ] detección de agentes inactivos
+- [ ] cálculo ahorro potencial
+- [ ] snapshot KPI diario + alertas smart básicas
+DoD:
+- [ ] dashboard muestra 4 KPIs clave
+- [ ] alerta license_idle y no_agent funcionando
+- [ ] export CSV de licencias y activos
+---
+## Sprint 4 (Semana 7-8) — e‑Waste + Hardening + Go-Live piloto
+- [ ] flujo disposición: request -> approve -> custody -> certificate -> close
+- [ ] storage seguro certificados (hash SHA-256)
+- [ ] hardening mínimo (MFA admin, SIEM logs, backups restore test)
+- [ ] UAT + piloto con tenant real
+DoD:
+- [ ] 1 caso e‑Waste completo auditado end-to-end
+- [ ] checklist seguridad MVP aprobado
+- [ ] piloto estable por 5-7 días
+---
+## Backlog priorizado (MVP v1.0)
+### Must Have (sí o sí)
+- [ ] Multi-tenant + RBAC base
+- [ ] CMDB central + auditoría inmutable
+- [ ] Discovery ingest + dedupe
+- [ ] SAM básico (licencias inactivas)
+- [ ] Dashboard ejecutivo mínimo
+- [ ] e‑Waste con certificado
+- [ ] CI/CD + staging + monitoreo base
+### Should Have
+- [ ] Outbox robusto + retries + DLQ
+- [ ] Delta sync móvil (si entra en MVP)
+- [ ] SSO (Azure AD/Google)
+### Could Have (1.1)
+- [ ] OCR avanzado de factura
+- [ ] Predicción mantenimiento ML
+- [ ] Mapa dependencias Neo4j
+---
+## Criterios de aceptación (por módulo)
+- [ ] CMDB: cada cambio genera audit_log, no editable
+- [ ] Discovery: evento duplicado no crea activo nuevo
+- [ ] SAM: licencias inactivas calculadas automáticamente diario
+- [ ] e‑Waste: no se puede cerrar caso sin certificado
+- [ ] Dashboard: responde < 2s con caché
+- [ ] Seguridad: MFA obligatoria en roles privilegiados
+---
+## Riesgos y mitigación
+- [ ] Riesgo: discovery genera ruido/duplicados
+Mitigación: fingerprint + reglas de confianza por fuente.
+- [ ] Riesgo: alcance crece demasiado
+Mitigación: congelar MVP y mover IA avanzada a 1.1.
+- [ ] Riesgo: deuda DevOps
+Mitigación: “platform day” semanal para observabilidad y seguridad.
+---
+## Stack operativo recomendado para arrancar rápido
+- [ ] API: NestJS + PostgreSQL + Redis
+- [ ] Scanner: Python async (rápido de iterar)
+- [ ] Web: Next.js + Tailwind + Zustand
+- [ ] Deploy: Kubernetes (staging/prod), GitHub Actions
+---
+Recap:
+Con este plan, en 8 semanas puedes lanzar un MVP enterprise real con impacto directo: visibilidad de activos, reducción de gasto en licencias, trazabilidad de e‑Waste y base sólida de cumplimiento.
+Si quieres, siguiente paso te doy la Fase 6.1: backlog en formato Jira (epics/stories/tasks con estimación en puntos).
+[JuvinChat] Perfecto, Jorge: ahora sí vamos con Fase 6.1 en formato Jira-ready con Epics → Stories → Tasks, prioridades y estimación en puntos.
+Te lo dejo orientado a 8 semanas, MVP v1.0, con enfoque en entrega real.
+- [ ] Si algo no calza con tu equipo, ajustamos 3 variables: capacidad semanal, móvil en MVP, y alcance de SSO.
+---
+## 🧭 Estructura de estimación usada
+- 1 pt: cambio pequeño
+- 2-3 pts: mediano
+- 5 pts: complejo
+- 8 pts: muy complejo (integración/riesgo alto)
+---
+## EPIC 1 — Plataforma Base y Seguridad
+Objetivo: tener cimientos productivos (multi-tenant, auth, RBAC, auditoría).
+### Story 1.1: Setup monorepo y estándares (5 pts)
+- [ ] Task: crear estructura apps/, packages/, infra/ (1)
+- [ ] Task: configurar lint/format/test base (2)
+- [ ] Task: pipeline CI inicial en GitHub Actions (2)
+### Story 1.2: Autenticación + MFA base (8 pts)
+- [ ] Task: login JWT + refresh token (3)
+- [ ] Task: MFA TOTP para roles admin (3)
+- [ ] Task: bloqueo por intentos fallidos + rate limit (2)
+### Story 1.3: RBAC granular (8 pts)
+- [ ] Task: tablas roles/permisos/user_roles (2)
+- [ ] Task: guard NestJS de permisos por recurso/acción (3)
+- [ ] Task: scope por location/cost center (3)
+### Story 1.4: Auditoría inmutable (5 pts)
+- [ ] Task: tabla audit_logs append-only (2)
+- [ ] Task: interceptor para registrar cambios CRUD (2)
+- [ ] Task: endpoint consulta de auditoría (1)
+---
+## EPIC 2 — CMDB + Discovery
+Objetivo: consolidar fuente única de verdad con ingesta automática.
+### Story 2.1: Modelo de activos CMDB (5 pts)
+- [ ] Task: migraciones assets, locations, índices (2)
+- [ ] Task: CRUD activos + filtros (2)
+- [ ] Task: validaciones de negocio (1)
+### Story 2.2: Endpoint discovery ingest (8 pts)
+- [ ] Task: POST /api/v1/assets/discovery (2)
+- [ ] Task: fingerprint + deduplicación (3)
+- [ ] Task: auditoría + métricas de ingesta (3)
+### Story 2.3: Outbox básico para eventos (8 pts)
+- [ ] Task: tabla outbox_events (2)
+- [ ] Task: worker publisher (3)
+- [ ] Task: retry/backoff y estado failed (3)
+---
+## EPIC 3 — SAM y Optimización Financiera
+Objetivo: detectar desperdicio y generar ahorro.
+### Story 3.1: Módulo licencias software (5 pts)
+- [ ] Task: modelo software_licenses (2)
+- [ ] Task: CRUD licencias (2)
+- [ ] Task: validación seats/estado (1)
+### Story 3.2: Detección de agentes inactivos (8 pts)
+- [ ] Task: job diario de cálculo inactive_agents (3)
+- [ ] Task: regla de negocio por umbral (2)
+- [ ] Task: alerta smart license_idle (3)
+### Story 3.3: Depreciación contable base (5 pts)
+- [ ] Task: campos depreciación en assets (2)
+- [ ] Task: tabla asset_depreciation_entries (1)
+- [ ] Task: job línea recta mensual (2)
+---
+## EPIC 4 — e‑Waste y Cumplimiento
+Objetivo: ciclo de disposición trazable con evidencia.
+### Story 4.1: Flujo de disposición (8 pts)
+- [ ] Task: tabla disposal_cases + estados (3)
+- [ ] Task: endpoints request/approve/close (3)
+- [ ] Task: reglas de transición válidas (2)
+### Story 4.2: Cadena de custodia (5 pts)
+- [ ] Task: tabla custody_events (2)
+- [ ] Task: endpoint de registro de evento (2)
+- [ ] Task: timeline visual en dashboard (1)
+### Story 4.3: Certificados de destrucción (5 pts)
+- [ ] Task: upload a storage seguro (2)
+- [ ] Task: checksum SHA-256 + verificación (2)
+- [ ] Task: bloqueo de cierre sin certificado (1)
+---
+## EPIC 5 — Dashboard Ejecutivo + Alertas
+Objetivo: visibilidad operativa y decisiones rápidas.
+### Story 5.1: KPIs principales (5 pts)
+- [ ] Task: tabla kpi_daily_snapshots (2)
+- [ ] Task: job snapshot diario (2)
+- [ ] Task: endpoint resumen ejecutivo (1)
+### Story 5.2: Feed de alertas inteligentes (8 pts)
+- [ ] Task: tabla smart_alerts (2)
+- [ ] Task: reglas rogue_asset, no_agent, ewaste_stalled (4)
+- [ ] Task: endpoint acknowledge/resolve (2)
+### Story 5.3: UI dashboard web (5 pts)
+- [ ] Task: cards KPI + trend line (2)
+- [ ] Task: lista top alertas abiertas (2)
+- [ ] Task: estados loading/error vacíos (1)
+---
+## EPIC 6 — DevOps, Observabilidad y Go-Live
+Objetivo: desplegar con seguridad y operación estable.
+### Story 6.1: Docker + K8s base (5 pts)
+- [ ] Task: Dockerfiles api/web (2)
+- [ ] Task: deployment/service manifests (2)
+- [ ] Task: readiness/liveness probes (1)
+### Story 6.2: CI/CD completo (8 pts)
+- [ ] Task: build/test/push imágenes (3)
+- [ ] Task: despliegue staging automático (3)
+- [ ] Task: aprobación manual a prod (2)
+### Story 6.3: Observabilidad y seguridad mínima (8 pts)
+- [ ] Task: logs estructurados + correlation-id (3)
+- [ ] Task: métricas y alertas (DLQ, latencia, errores) (3)
+- [ ] Task: backup + restore test evidenciado (2)
+---
+## Resumen de esfuerzo estimado
+- Total aproximado: ~109 puntos
+- Recomendación:
+- Equipo pequeño (15-20 pts/sprint): recortar móvil/SSO avanzado a v1.1
+- Equipo medio (25-35 pts/sprint): MVP completo 8 semanas
+- Equipo robusto (40+ pts/sprint): incluir móvil y más hardening
+---
+## Sugerencia de prioridad (orden de ejecución)
+1) Epic 1 + 2
+2) Epic 3
+3) Epic 4 + 5
+4) Epic 6 transversal desde semana 1
+---
+Recap:
+Ya tienes backlog Jira-ready con puntos y orden realista para ejecutar el MVP.
+Si quieres, te preparo ahora la Fase 6.2: te entrego esto mismo en formato CSV importable para Jira (Issue Type, Summary, Epic Link, Story Points, Priority, Description).
+[JuvinChat] Perfecto, Jorge. Vamos con la Fase 6.2: te dejo un CSV importable en Jira con Epics, Stories y Tasks, incluyendo Story Points, Priority y Description.
+Si quieres, luego te lo adapto a tu esquema exacto de Jira (company-managed vs team-managed), pero este ya te sirve como base directa.
+- [ ] Cómo usarlo
+1) Copia el CSV en un archivo: comptrol_fase_6_2_jira.csv
+2) En Jira: Settings → System → External System Import → CSV
+3) Mapea columnas:
+- Issue Type → Tipo de issue
+- Summary → Resumen
+- Description → Descripción
+- Priority → Prioridad
+- Story Points → Story points
+- Epic Name (solo Epics)
+- Epic Link (Stories/Tasks que cuelgan del Epic)
+csv
+Issue Type,Summary,Epic Name,Epic Link,Story Points,Priority,Description
+Epic,"E1 - Plataforma Base y Seguridad","E1 - Plataforma Base y Seguridad",,,"Highest","Cimientos productivos: multi-tenant, auth, RBAC, auditoría."
+Story,"S1.1 - Setup monorepo y estándares",,"E1 - Plataforma Base y Seguridad",5,High,"Estructura apps/packages/infra, lint/format/test, CI inicial."
+Task,"T1.1.1 - Crear estructura monorepo apps/packages/infra",,"E1 - Plataforma Base y Seguridad",1,Medium,"Inicializar estructura de carpetas y workspaces."
+Task,"T1.1.2 - Configurar lint/format/test base",,"E1 - Plataforma Base y Seguridad",2,Medium,"ESLint, Prettier y pruebas unitarias base."
+Task,"T1.1.3 - Pipeline CI inicial GitHub Actions",,"E1 - Plataforma Base y Seguridad",2,High,"Ejecutar lint/test/build en push y PR."
+Story,"S1.2 - Autenticación JWT + MFA base",,"E1 - Plataforma Base y Seguridad",8,Highest,"Login JWT, refresh token, MFA TOTP para roles privilegiados."
+Task,"T1.2.1 - Implementar login JWT + refresh",,"E1 - Plataforma Base y Seguridad",3,High,"Endpoints y manejo seguro de tokens."
+Task,"T1.2.2 - MFA TOTP para admins",,"E1 - Plataforma Base y Seguridad",3,Highest,"Enrolamiento y validación MFA."
+Task,"T1.2.3 - Rate limit + bloqueo por intentos",,"E1 - Plataforma Base y Seguridad",2,High,"Protección contra brute force."
+Story,"S1.3 - RBAC granular con scopes",,"E1 - Plataforma Base y Seguridad",8,Highest,"Roles/permisos por recurso-acción y alcance por sede/cost center."
+Task,"T1.3.1 - Crear tablas RBAC",,"E1 - Plataforma Base y Seguridad",2,High,"roles, permissions, role_permissions, user_roles, policy_scopes."
+Task,"T1.3.2 - Guard de autorización NestJS",,"E1 - Plataforma Base y Seguridad",3,Highest,"Validar permisos efectivos por request."
+Task,"T1.3.3 - Validación de scope por ubicación/cost center",,"E1 - Plataforma Base y Seguridad",3,High,"Restringir operaciones según alcance asignado."
+Story,"S1.4 - Auditoría inmutable",,"E1 - Plataforma Base y Seguridad",5,High,"Registrar create/update/delete como eventos append-only."
+Task,"T1.4.1 - Tabla audit_logs append-only",,"E1 - Plataforma Base y Seguridad",2,Medium,"Estructura inmutable con actor y payload."
+Task,"T1.4.2 - Interceptor de auditoría CRUD",,"E1 - Plataforma Base y Seguridad",2,High,"Capturar cambios automáticamente."
+Task,"T1.4.3 - Endpoint de consulta auditoría",,"E1 - Plataforma Base y Seguridad",1,Medium,"Filtros por entidad/fecha/usuario."
+Epic,"E2 - CMDB + Discovery","E2 - CMDB + Discovery",,,"Highest","Fuente única de verdad e ingesta automática de activos."
+Story,"S2.1 - Modelo CMDB de activos",,"E2 - CMDB + Discovery",5,High,"Tablas core de activos, ubicaciones, filtros e índices."
+Task,"T2.1.1 - Migraciones assets/locations",,"E2 - CMDB + Discovery",2,High,"Crear tablas e índices principales."
+Task,"T2.1.2 - CRUD de activos con filtros",,"E2 - CMDB + Discovery",2,High,"Listado paginado, búsqueda y filtros."
+Task,"T2.1.3 - Reglas de validación de activos",,"E2 - CMDB + Discovery",1,Medium,"Estados válidos y consistencia de datos."
+Story,"S2.2 - Endpoint de discovery ingest",,"E2 - CMDB + Discovery",8,Highest,"Recepción de telemetría y deduplicación por fingerprint."
+Task,"T2.2.1 - POST /api/v1/assets/discovery",,"E2 - CMDB + Discovery",2,High,"Ingesta base de eventos discovery."
+Task,"T2.2.2 - Fingerprint + dedupe",,"E2 - CMDB + Discovery",3,Highest,"Evitar duplicados por serial/mac/hostname."
+Task,"T2.2.3 - Métricas y auditoría de ingesta",,"E2 - CMDB + Discovery",3,High,"Trazabilidad completa evento->activo."
+Story,"S2.3 - Outbox básico",,"E2 - CMDB + Discovery",8,Highest,"Publicación de eventos confiable con retry/backoff."
+Task,"T2.3.1 - Crear tabla outbox_events",,"E2 - CMDB + Discovery",2,High,"Outbox transaccional."
+Task,"T2.3.2 - Worker publisher",,"E2 - CMDB + Discovery",3,Highest,"Publicar pending events al bus."
+Task,"T2.3.3 - Retry/backoff + failed state",,"E2 - CMDB + Discovery",3,High,"Manejo de errores y resiliencia."
+csv
+Epic,"E3 - SAM y Optimización Financiera","E3 - SAM y Optimización Financiera",,,"High","Control de licencias, ahorro y depreciación."
+Story,"S3.1 - Módulo de licencias",,"E3 - SAM y Optimización Financiera",5,High,"Gestión de licencias y asignaciones."
+Task,"T3.1.1 - Modelo software_licenses",,"E3 - SAM y Optimización Financiera",2,Medium,"Tabla y relaciones principales."
+Task,"T3.1.2 - CRUD de licencias",,"E3 - SAM y Optimización Financiera",2,High,"Crear/editar/listar licencias."
+Task,"T3.1.3 - Validación seats/estado",,"E3 - SAM y Optimización Financiera",1,Medium,"Reglas de negocio SAM."
+Story,"S3.2 - Detección de inactividad",,"E3 - SAM y Optimización Financiera",8,Highest,"Job diario para detectar licencias ociosas."
+Task,"T3.2.1 - Job cálculo inactive_agents",,"E3 - SAM y Optimización Financiera",3,High,"Batch diario por tenant."
+Task,"T3.2.2 - Umbrales de costo/uso",,"E3 - SAM y Optimización Financiera",2,High,"Parámetros para disparar alerta."
+Task,"T3.2.3 - Alerta smart license_idle",,"E3 - SAM y Optimización Financiera",3,Highest,"Generar alerta y ahorro potencial."
+Story,"S3.3 - Depreciación contable base",,"E3 - SAM y Optimización Financiera",5,High,"Línea recta mensual y movimientos contables."
+Task,"T3.3.1 - Extender assets con campos de depreciación",,"E3 - SAM y Optimización Financiera",2,Medium,"Método, vida útil, salvage, fecha inicio."
+Task,"T3.3.2 - Crear asset_depreciation_entries",,"E3 - SAM y Optimización Financiera",1,Medium,"Asiento mensual por activo."
+Task,"T3.3.3 - Job mensual depreciación",,"E3 - SAM y Optimización Financiera",2,High,"Cálculo idempotente."
+Epic,"E4 - e-Waste y Cumplimiento","E4 - e-Waste y Cumplimiento",,,"High","Flujo de disposición final con cadena de custodia."
+Story,"S4.1 - Flujo de disposición",,"E4 - e-Waste y Cumplimiento",8,Highest,"request->approve->in_transit->destroyed->closed."
+Task,"T4.1.1 - Tabla disposal_cases + estados",,"E4 - e-Waste y Cumplimiento",3,High,"Modelo principal de casos de disposición."
+Task,"T4.1.2 - Endpoints request/approve/close",,"E4 - e-Waste y Cumplimiento",3,Highest,"API de transición de estados."
+Task,"T4.1.3 - Validación de transiciones",,"E4 - e-Waste y Cumplimiento",2,High,"FSM de estados válidos."
+Story,"S4.2 - Cadena de custodia",,"E4 - e-Waste y Cumplimiento",5,High,"Registrar sellado, recojo, traslado, recepción y destrucción."
+Task,"T4.2.1 - Tabla custody_events",,"E4 - e-Waste y Cumplimiento",2,Medium,"Modelo de trazabilidad."
+Task,"T4.2.2 - Endpoint de custody event",,"E4 - e-Waste y Cumplimiento",2,High,"Registro cronológico con evidencia."
+Task,"T4.2.3 - Timeline visual",,"E4 - e-Waste y Cumplimiento",1,Medium,"Vista en frontend."
+Story,"S4.3 - Certificados de destrucción",,"E4 - e-Waste y Cumplimiento",5,Highest,"Upload y verificación de certificado."
+Task,"T4.3.1 - Upload seguro (S3/KMS)",,"E4 - e-Waste y Cumplimiento",2,High,"Almacenamiento cifrado."
+Task,"T4.3.2 - Hash SHA-256 + verificación",,"E4 - e-Waste y Cumplimiento",2,Highest,"Integridad de documento."
+Task,"T4.3.3 - Bloqueo cierre sin certificado",,"E4 - e-Waste y Cumplimiento",1,Highest,"Control de cumplimiento obligatorio."
+Epic,"E5 - Dashboard Ejecutivo + Alertas","E5 - Dashboard Ejecutivo + Alertas",,,"High","Visibilidad de KPIs y alertas accionables."
+Story,"S5.1 - KPIs diarios",,"E5 - Dashboard Ejecutivo + Alertas",5,High,"Snapshots diarios para tablero de gerencia."
+Task,"T5.1.1 - Tabla kpi_daily_snapshots",,"E5 - Dashboard Ejecutivo + Alertas",2,Medium,"Persistencia histórica de KPIs."
+Task,"T5.1.2 - Job diario de snapshot",,"E5 - Dashboard Ejecutivo + Alertas",2,High,"Cálculo automático por tenant."
+Task,"T5.1.3 - Endpoint resumen ejecutivo",,"E5 - Dashboard Ejecutivo + Alertas",1,Medium,"Respuesta rápida para cards."
+Story,"S5.2 - Alertas inteligentes",,"E5 - Dashboard Ejecutivo + Alertas",8,Highest,"Reglas de riesgo operacional y cumplimiento."
+csv
+Task,"T5.2.1 - Tabla smart_alerts",,"E5 - Dashboard Ejecutivo + Alertas",2,Medium,"Estado open/ack/resolved."
+Task,"T5.2.2 - Reglas rogue/no_agent/ewaste_stalled",,"E5 - Dashboard Ejecutivo + Alertas",4,Highest,"Motor rule-based inicial."
+Task,"T5.2.3 - Endpoints acknowledge/resolve",,"E5 - Dashboard Ejecutivo + Alertas",2,High,"Gestión de ciclo de alerta."
+Story,"S5.3 - UI dashboard web",,"E5 - Dashboard Ejecutivo + Alertas",5,High,"Cards, tendencias y top alertas."
+Task,"T5.3.1 - Cards KPI + gráficos",,"E5 - Dashboard Ejecutivo + Alertas",2,High,"Vista principal ejecutiva."
+Task,"T5.3.2 - Lista de alertas abiertas",,"E5 - Dashboard Ejecutivo + Alertas",2,High,"Priorización por severidad."
+Task,"T5.3.3 - Estados loading/error/empty",,"E5 - Dashboard Ejecutivo + Alertas",1,Medium,"UX resiliente."
+Epic,"E6 - DevOps, Observabilidad y Go-Live","E6 - DevOps, Observabilidad y Go-Live",,,"Highest","Despliegue seguro, monitoreo y salida a piloto."
+Story,"S6.1 - Docker + Kubernetes base",,"E6 - DevOps, Observabilidad y Go-Live",5,High,"Empaquetado y despliegue base."
+Task,"T6.1.1 - Dockerfiles API/Web",,"E6 - DevOps, Observabilidad y Go-Live",2,High,"Build reproducible."
+Task,"T6.1.2 - Manifests deployment/service",,"E6 - DevOps, Observabilidad y Go-Live",2,High,"Recursos base en K8s."
+Task,"T6.1.3 - Readiness/Liveness probes",,"E6 - DevOps, Observabilidad y Go-Live",1,Medium,"Salud de pods."
+Story,"S6.2 - CI/CD completo",,"E6 - DevOps, Observabilidad y Go-Live",8,Highest,"Build/test/push/deploy con promoción controlada."
+Task,"T6.2.1 - Pipeline build/test/push",,"E6 - DevOps, Observabilidad y Go-Live",3,High,"Publicar imágenes en registry."
+Task,"T6.2.2 - Deploy automático a staging",,"E6 - DevOps, Observabilidad y Go-Live",3,Highest,"Entrega continua en ambiente QA."
+Task,"T6.2.3 - Aprobación manual para prod",,"E6 - DevOps, Observabilidad y Go-Live",2,High,"Gate de cambio controlado."
+Story,"S6.3 - Observabilidad + seguridad mínima",,"E6 - DevOps, Observabilidad y Go-Live",8,Highest,"Logs, métricas, alertas y backup probado."
+Task,"T6.3.1 - Logs estructurados + correlation-id",,"E6 - DevOps, Observabilidad y Go-Live",3,High,"Trazabilidad end-to-end."
+Task,"T6.3.2 - Métricas y alertas operativas",,"E6 - DevOps, Observabilidad y Go-Live",3,Highest,"DLQ rate, latencia, error burst."
+Task,"T6.3.3 - Backup + restore test con evidencia",,"E6 - DevOps, Observabilidad y Go-Live",2,Highest,"Prueba DR mínima para auditoría."
+- [ ] Práctica rápida (siguiente acción mínima)
+1) Importa este CSV en un proyecto Jira nuevo.
+2) Crea versiones: MVP-1.0, v1.1.
+3) Asigna sprints 1–4 en bloques de 2 semanas.
+Recap: ya tienes la base para cargar el backlog completo en Jira en minutos.
+Si quieres, te paso la Fase 6.3: te lo separo por sprints ya asignados (Sprint 1/2/3/4) y con dependencias críticas (blocks, is blocked by).
+[JuvinChat] Perfecto, Jorge. En Fase 6.3 te dejo el backlog ya asignado por Sprint (1–4) y con dependencias críticas para ejecutar sin bloqueos tontos.
+Objetivo: que tu equipo sepa exactamente qué va primero, qué desbloquea qué, y qué entra al piloto.
+- [ ] Pregunta rápida (solo 1): ¿quieres que en el próximo paso te lo convierta a formato de import masivo con columnas Issue Key / Blocks / Is Blocked By para Jira Advanced Roadmaps?
+---
+## ✅ Reglas de planificación (para esta versión)
+- Cada sprint = 2 semanas.
+- Capacidad objetivo: ~25–30 pts/sprint (equipo medio).
+- Priorización: seguridad + datos + discovery primero.
+- DevOps/observabilidad corre transversal, pero con hitos por sprint.
+---
+## Sprint 1 (Semanas 1-2) — Base técnica y seguridad inicial
+Meta: tener cimientos para construir encima sin rehacer.
+- [ ] S1.1 - Setup monorepo y estándares (5)
+- [ ] S1.2 - Auth JWT + MFA base (8)
+- [ ] S1.3 - RBAC granular (8)
+- [ ] S1.4 - Auditoría inmutable (5)
+- [ ] S6.1 - Docker + K8s base (5) (parcial, mínimo deploy en staging)
+Total aprox: 31 pts (si tu equipo es más chico, mueve S6.1 a Sprint 2)
+### Dependencias críticas Sprint 1
+- S1.1 bloquea casi todo lo demás.
+- S1.2 bloquea endpoints protegidos de módulos siguientes.
+- S1.3 bloquea permisos finos en CMDB/e‑Waste.
+- S1.4 debe estar antes de UAT para trazabilidad.
+---
+## Sprint 2 (Semanas 3-4) — CMDB + Discovery + Eventos
+Meta: lograr ingesta confiable y fuente de verdad operativa.
+- [ ] S2.1 - Modelo CMDB de activos (5)
+- [ ] S2.2 - Endpoint discovery ingest (8)
+- [ ] S2.3 - Outbox básico (8)
+- [ ] S6.2 - CI/CD completo (8) (si capacidad alcanza; si no, dividir parcial)
+Total aprox: 29 pts
+### Dependencias críticas Sprint 2
+- S2.1 bloquea S2.2.
+- S2.2 bloquea reglas smart de rogue asset (Sprint 3).
+- S2.3 bloquea escalabilidad de alertas/event-driven.
+- S6.2 depende de S1.1 + S6.1.
+---
+## Sprint 3 (Semanas 5-6) — SAM + KPIs + Alertas inteligentes
+Meta: empezar a capturar valor financiero y operacional visible.
+- [ ] S3.1 - Módulo licencias (5)
+- [ ] S3.2 - Detección de inactividad (8)
+- [ ] S3.3 - Depreciación contable base (5)
+- [ ] S5.1 - KPIs diarios (5)
+- [ ] S5.2 - Alertas inteligentes (8) (si falta capacidad, dejar 1 regla para Sprint 4)
+Total aprox: 31 pts (ajustable a 26–28 recortando alcance de S5.2)
+### Dependencias críticas Sprint 3
+- S3.1 bloquea S3.2.
+- S3.2 alimenta alerta license_idle en S5.2.
+- S2.2 (Sprint 2) habilita alerta rogue_asset en S5.2.
+- S5.1 puede correr en paralelo con S3.x.
+---
+## Sprint 4 (Semanas 7-8) — e‑Waste + Dashboard final + Go-live piloto
+Meta: cerrar cumplimiento y salir a piloto controlado.
+- [ ] S4.1 - Flujo de disposición (8)
+- [ ] S4.2 - Cadena de custodia (5)
+- [ ] S4.3 - Certificados de destrucción (5)
+- [ ] S5.3 - UI dashboard web (5)
+- [ ] S6.3 - Observabilidad + seguridad mínima (8)
+Total aprox: 31 pts (recortable a 26 priorizando S4.1 + S4.3 + S6.3)
+### Dependencias críticas Sprint 4
+- S4.1 bloquea S4.2 y S4.3.
+- S4.3 bloquea cierre de caso e‑Waste (regla compliance).
+- S5.3 depende de S5.1 y parcialmente S5.2.
+- S6.3 requerido antes del piloto real.
+---
+## Mapa de dependencias (resumen rápido)
+- [ ] S1.1 → S1.2, S1.3, S6.1, S6.2
+- [ ] S1.2 + S1.3 → S2.x, S3.x, S4.x, S5.x
+- [ ] S2.1 → S2.2 → S5.2(rogue_asset)
+- [ ] S3.1 → S3.2 → S5.2(license_idle)
+- [ ] S4.1 → S4.2 + S4.3
+- [ ] S5.1 + S5.2 → S5.3
+- [ ] S6.1 → S6.2 → S6.3 → Go-live piloto
+---
+## Criterios de salida por sprint (gate)
+- [ ] Fin S1: login+MFA+RBAC+audit funcionando en staging.
+- [ ] Fin S2: discovery ingest idempotente + outbox publicando.
+- [ ] Fin S3: licencias inactivas detectadas + KPIs + alertas básicas.
+- [ ] Fin S4: e‑Waste end-to-end con certificado + dashboard + observabilidad + piloto.
+## Explicación rápida (simple → ejemplo → práctica → recap)
+Simple:
+Sprint plan con dependencias evita arrancar cosas que todavía no pueden terminar.
+Ejemplo:
+No tiene sentido construir alerta license_idle si aún no existe cálculo de inactividad (S3.2).
+Práctica (acción mínima hoy):
+1) Crea 4 sprints en Jira.
+2) Mueve Stories por sprint según esta guía.
+3) Agrega links de dependencia (blocks) en las historias clave listadas arriba.
+Recap:
+Con esta Fase 6.3 tienes un roadmap ejecutable: qué entra cada quincena, qué desbloquea qué, y qué condiciones habilitan el piloto.
+Si quieres, hago la Fase 6.4: te doy un plan de capacidad por rol (Backend/Frontend/DevOps/QA/PO) con carga semanal para validar si el plan cabe realmente en tu equipo.
+[JuvinChat] Perfecto, Jorge. En Fase 6.4 vamos a validar si el plan realmente cabe en tu equipo con una matriz de capacidad por rol y carga semanal.
+Te dejo una versión base para un equipo medio y al final te digo cómo ajustarla si son menos personas.
+- [ ] Pregunta rápida (para afinar después): ¿tu equipo actual tiene QA y DevOps dedicados, o son roles compartidos?
+## ✅ Supuesto de equipo (base)
+- Backend: 2 devs
+- Frontend Web: 1 dev
+- DevOps: 0.5 FTE (medio tiempo)
+- QA: 1 QA
+- PO/PM: 0.5 FTE
+- Sprint de 2 semanas, capacidad promedio por persona técnica: 20–24 pts/sprint
+---
+## Plan de capacidad por Sprint (8 semanas)
+## Sprint 1 (Base y seguridad)
+- [ ] Backend (16 pts): Auth JWT/MFA, RBAC backend, auditoría base
+- [ ] Frontend (5 pts): pantallas login, estados de sesión, guardas de rutas
+- [ ] DevOps (5 pts): CI inicial + Docker base + staging mínimo
+- [ ] QA (4 pts): plan de pruebas auth/RBAC + smoke tests
+- [ ] PO/PM: definición DoD + criterios de aceptación de seguridad
+Carga total sugerida: ~30 pts
+---
+## Sprint 2 (CMDB + Discovery)
+- [ ] Backend (18 pts): modelo activos, ingest discovery, dedupe
+- [ ] Frontend (5 pts): listado activos + filtros + vista de descubrimiento
+- [ ] DevOps (4 pts): pipeline CD a staging + secrets básicos
+- [ ] QA (4 pts): pruebas de idempotencia, volumen y regresión
+- [ ] PO/PM: priorización de reglas discovery
+Carga total sugerida: ~31 pts
+---
+## Sprint 3 (SAM + KPIs + alertas)
+- [ ] Backend (16 pts): licencias, job inactividad, snapshots KPI
+- [ ] Frontend (6 pts): cards KPI + tabla alertas base
+- [ ] DevOps (3 pts): scheduler jobs + observabilidad de jobs
+- [ ] QA (5 pts): pruebas de cálculo financiero y reglas de alertas
+- [ ] PO/PM: validación funcional con stakeholders (finanzas/IT)
+Carga total sugerida: ~30 pts
+---
+## Sprint 4 (e‑Waste + Go-live piloto)
+- [ ] Backend (15 pts): disposal flow, custody, certificados/hash
+- [ ] Frontend (6 pts): flujo e‑Waste + timeline + dashboard final
+- [ ] DevOps (5 pts): hardening mínimo, backup/restore test, alerting
+- [ ] QA (5 pts): UAT, pruebas end-to-end y checklist de salida
+- [ ] PO/PM: plan de piloto y criterios de éxito
+Carga total sugerida: ~31 pts
+---
+## Semáforo de factibilidad
+- [ ] Verde (sí llega en 8 semanas): equipo como el supuesto o mayor.
+- [ ] Amarillo (ajustar alcance): 1 backend + 1 frontend + roles compartidos.
+- [ ] Rojo (alto riesgo): sin QA/DevOps dedicados y cambios de alcance continuos.
+---
+## Si tu equipo es más pequeño (recorte recomendado)
+1) Dejar móvil para v1.1.
+2) En alertas inteligentes, lanzar solo 2 reglas: license_idle y no_agent.
+3) Dashboard sin gráficos avanzados al inicio (cards + tabla).
+4) SSO enterprise y OCR avanzado pasan a post-MVP.
+---
+## Explicación rápida (simple → ejemplo → práctica → recap)
+Simple:
+Capacidad por rol evita sobrecargar backend mientras frontend/QA quedan bloqueados.
+Ejemplo:
+Si pones 28 pts solo en backend en Sprint 2, QA no valida a tiempo y Sprint 3 arranca con deuda.
+Práctica (hoy mismo):
+- [ ] Armar tabla real con tus nombres y disponibilidad (%).
+- [ ] Comparar contra esta distribución por sprint.
+- [ ] Recortar alcance donde haya sobrecarga >20%.
+Recap:
+Con esta Fase 6.4 ya puedes saber si el roadmap es realista por personas, no solo por historias.
+Si quieres, seguimos con Fase 6.5: te preparo la matriz RACI + plan de ceremonias (daily/planning/review/retro) para operar el proyecto sin fricción.
+[8:51 p.m., 4/3/2026] jgael1: [JuvinChat] Perfecto, Jorge. En Fase 6.5 cerramos la operación del proyecto con Matriz RACI + rituales ágiles + cadencia de gobierno para que el plan no solo exista, sino que avance sin fricción.
+- [ ] Pregunta rápida (1): ¿quieres operar con Scrum puro (sprints cerrados) o Scrumban (permitiendo urgencias controladas)?
+## ✅ 1) Matriz RACI (MVP v1.0)
+Roles sugeridos:
+- PO/PM (Product Owner / Project Manager)
+- TL (Tech Lead)
+- BE (Backend)
+- FE (Frontend)
+- DO (DevOps)
+- QA (Quality)
+- SEC (Seguridad/Compliance, puede ser rol parcial)
+- STK (Stakeholders negocio: IT, Finanzas, Operaciones)
+Leyenda:
+- R = Responsible (ejecuta)
+- A = Accountable (decide/da la cara)
+- C = Consulted (consulta)
+- I = Informed (informado)
+- [ ] Definición de roadmap y alcance MVP → A: PO/PM | R: PO/PM | C: TL, STK | I: Equipo
+- [ ] Arquitectura técnica y estándares → A: TL | R: TL, BE, FE | C: DO, SEC | I: PO/PM
+- [ ] Auth/MFA/RBAC → A: TL | R: BE | C: SEC, QA | I: PO/PM
+- [ ] CMDB + Discovery + Outbox → A: TL | R: BE | C: DO, QA | I: PO/PM, STK
+- [ ] Dashboard ejecutivo → A: PO/PM | R: FE, BE | C: STK, QA | I: SEC
+- [ ] SAM (licencias/ahorro) → A: PO/PM | R: BE | C: STK(Finanzas), QA | I: TL
+- [ ] e‑Waste + custodia + certificados → A: PO/PM | R: BE, FE | C: SEC, QA, STK(Operaciones) | I: TL
+- [ ] CI/CD + ambientes → A: TL | R: DO | C: BE, FE, QA | I: PO/PM
+- [ ] Observabilidad + backup/restore → A: TL | R: DO | C: SEC, QA | I: PO/PM
+- [ ] UAT + Go-live piloto → A: PO/PM | R: QA, DO, TL | C: STK | I: Todo el equipo
+---
+## ✅ 2) Ceremonias (operación semanal)
+## A. Sprint Planning (2h cada 2 semanas)
+- [ ] Revisar capacidad real por rol (no ideal)
+- [ ] Confirmar objetivo de sprint (1 frase)
+- [ ] Seleccionar historias + dependencias
+- [ ] Congelar alcance base (cambios vía regla de urgencia)
+Salida obligatoria: backlog comprometido + riesgos + owners claros.
+## B. Daily (15 min)
+Cada persona responde:
+- [ ] Qué cerré ayer
+- [ ] Qué haré hoy
+- [ ] Bloqueo concreto (si existe)
+Regla: resolver discusiones técnicas fuera del daily (parking lot 15-30 min).
+## C. Backlog Refinement (60 min semanal)
+- [ ] Preparar historias del próximo sprint
+- [ ] Alinear criterios de aceptación
+- [ ] Revisar dependencias y definición de “ready”
+## D. Sprint Review (60-90 min)
+- [ ] Demo de valor funcional (no slides, producto real)
+- [ ] Validación con negocio (IT/Finanzas/Operaciones)
+- [ ] Decisiones de ajuste para siguiente sprint
+## E. Retro (45-60 min)
+- [ ] Qué funcionó
+- [ ] Qué no funcionó
+- [ ] 1-2 acciones concretas con owner y fecha
+---
+## ✅ 3) Reglas de gobierno (para evitar caos)
+- [ ] Definition of Ready (DoR)
+Historia entra a sprint solo si: objetivo claro, criterio de aceptación, dependencias mapeadas, estimación hecha.
+- [ ] Definition of Done (DoD)
+Código + tests + revisión + deploy en staging + evidencia QA + auditoría/logs cuando aplique.
+- [ ] Regla de urgencias
+Máximo 1 urgencia por sprint (si entra, sale algo equivalente en puntos).
+- [ ] WIP limits (Scrumban-friendly)
+- Backend: máximo 2 historias “in progress” por dev
+- Frontend: máximo 2
+- QA: máximo 3 en validación
+---
+## ✅ 4) KPIs de ejecución del equipo (operativos)
+- [ ] Sprint Predictability = completado/comprometido (meta > 80%)
+- [ ] Lead Time historia (meta: tendencia a la baja)
+- [ ] Defect Leakage (bugs en UAT/prod)
+- [ ] Deployment Frequency (staging/prod)
+- [ ] MTTR de incidentes durante piloto
+- [ ] % historias con AC cumplido al 100%
+---
+## ✅ 5) Calendario sugerido (quincenal)
+Semana 1
+- [ ] Lunes: Planning
+- [ ] Martes-Viernes: Daily + ejecución
+- [ ] Miércoles: Refinement corto
+Semana 2
+- [ ] Lunes-Jueves: ejecución + dailies
+- [ ] Viernes: Review + Retro + pre-planeación siguiente sprint
+---
+## Simple → ejemplo → práctica → recap
+Simple:
+RACI define “quién decide y quién ejecuta”; ceremonias mantienen ritmo; reglas evitan desorden.
+Ejemplo:
+[8:51 p.m., 4/3/2026] jgael1: Si aparece una urgencia de seguridad en Sprint 3, entra solo si sale otra historia equivalente. Así no rompes el sprint completo.
+Práctica (hoy):
+1) Crea documento “Team Operating System v1”.
+2) Copia esta RACI y asigna nombres reales.
+3) Agenda desde ya las 5 ceremonias recurrentes por 8 semanas.
+Recap:
+Con Fase 6.5 ya tienes modelo operativo completo: responsabilidades, ritmo de trabajo, gobernanza y métricas para que el MVP llegue en tiempo y con calidad.
+Si quieres, hacemos Fase 6.6: plan de riesgos + contingencias + gatillos de decisión ejecutiva (qué hacer si un sprint se descarrila).
+[JuvinChat] Perfecto, Jorge: en Fase 6.6 te dejo un plan práctico de riesgos + contingencias + gatillos de decisión ejecutiva para actuar rápido si un sprint se descarrila.
+La idea es simple: detectar temprano, decidir con reglas, y proteger el MVP.
+- [ ] Pregunta breve (opcional): ¿quieres que asumamos tolerancia de retraso máxima de 1 sprint, o cero tolerancia en fecha de piloto?
+## ✅ 1) Matriz de riesgos (priorizados)
+## R1. Sobrealcance (scope creep)
+- Probabilidad: Alta
+- Impacto: Alto
+- Señales tempranas: entran historias nuevas cada semana, AC ambiguos, cambios “pequeños” repetidos.
+- Mitigación:
+- [ ] Congelar alcance de sprint en planning
+- [ ] Regla 1x1: si entra algo, sale algo del mismo tamaño
+- [ ] “MVP vs v1.1” visible en tablero
+- Contingencia: mover features no críticas (SSO avanzado, OCR, móvil) a v1.1.
+## R2. Cuello de botella en Backend
+- Probabilidad: Alta
+- Impacto: Alto
+- Señales: BE con >70% de historias bloqueantes, FE/QA esperando.
+- Mitigación:
+- [ ] Partir historias backend grandes en slices semanales
+- [ ] Definir contratos API temprano (mock/stub)
+- [ ] Pairing TL+BE en temas críticos
+- Contingencia: reasignar 1 recurso temporal a backend y recortar reglas no esenciales.
+## R3. Calidad insuficiente / defectos tardíos
+- Probabilidad: Media
+- Impacto: Alto
+- Señales: bugs críticos en UAT, retrabajo en historias “done”.
+- Mitigación:
+- [ ] DoD estricto (test + QA + staging)
+- [ ] Pruebas de regresión mínimas por sprint
+- [ ] Criterios de aceptación verificables
+- Contingencia: freeze de nuevas features por 3-5 días para estabilización.
+## R4. Riesgo DevOps/infra (deploy inestable)
+- Probabilidad: Media
+- Impacto: Alto
+- Señales: fallos frecuentes de pipeline, rollback manual caótico.
+- Mitigación:
+- [ ] CI/CD con gates claros
+- [ ] Ambientes y secrets estandarizados
+- [ ] Observabilidad desde Sprint 1
+- Contingencia: ventana de hardening dedicada + despliegue progresivo (canary/blue-green simple).
+## R5. Discovery ruidoso (duplicados/falsos positivos)
+- Probabilidad: Media-Alta
+- Impacto: Medio-Alto
+- Señales: activos duplicados, alertas irrelevantes.
+- Mitigación:
+- [ ] Fingerprint robusto + reglas de confianza por fuente
+- [ ] Umbrales por tenant
+- [ ] Auditoría de dedupe
+- Contingencia: degradar temporalmente reglas más agresivas y priorizar precisión.
+## R6. Cumplimiento e‑Waste incompleto
+- Probabilidad: Media
+- Impacto: Alto (legal/auditoría)
+- Señales: casos cerrados sin evidencia completa.
+- Mitigación:
+- [ ] Bloqueo técnico: no cierre sin certificado
+- [ ] Cadena de custodia obligatoria
+- [ ] Checklist de compliance en QA
+- Contingencia: suspender cierre automático y habilitar aprobación manual controlada.
+---
+## ✅ 2) Gatillos ejecutivos (decisión rápida)
+Activa comité corto (PO+TL+QA+DevOps) si ocurre cualquiera:
+- [ ] Velocidad real < 70% del comprometido por 2 sprints seguidos
+- [ ] >20% historias bloqueadas más de 3 días
+- [ ] >3 bugs críticos abiertos al final del sprint
+- [ ] Fallo de restore backup en prueba
+- [ ] Discovery duplicando >10% de activos nuevos
+- [ ] UAT rechazado por stakeholder clave
+---
+## ✅ 3) Playbook de contingencia (qué hacer en 48h)
+## Paso 1 (0-24h): Diagnóstico
+- [ ] Identificar top 3 causas raíz (no síntomas)
+- [ ] Congelar ingreso de alcance nuevo
+- [ ] Recalcular capacidad real del sprint
+## Paso 2 (24-36h): Replan táctico
+- [ ] Mantener solo historias “must-have MVP”
+- [ ] Mover “should/could” a v1.1
+- [ ] Reasignar recursos a ruta crítica
+## Paso 3 (36-48h): Ejecución controlada
+- [ ] Publicar plan de recuperación con fechas
+- [ ] Ajustar dependencias en Jira (blocks)
+- [ ] Monitoreo diario de riesgos críticos
+---
+## ✅ 4) Umbrales de recorte de alcance (guardrails)
+Si se cumple esto, recortas automáticamente:
+- [ ] Sprint 2 no cierra discovery idempotente → mover alertas avanzadas a v1.1
+- [ ] Sprint 3 no cierra SAM base → congelar depreciación avanzada
+- [ ] Sprint 4 inicia con >25% deuda crítica → priorizar solo compliance + estabilidad + piloto
+---
+## ✅ 5) Registro de riesgos (plantilla rápida)
+Usa esta estructura por cada riesgo:
+- ID
+- Descripción
+- Owner
+- Probabilidad/Impacto
+- Señal temprana
+- Mitigación
+- Plan B (contingencia)
+- Estado (Open/Monitoring/Closed)
+- Última revisión
+---
+Simple: riesgo sin gatillos = discusión eterna.
+Ejemplo: si velocidad cae <70% por 2 sprints, se activa recorte automático, no debate infinito.
+Práctica (hoy):
+1) Crea tablero “Risk Register”.
+2) Carga R1–R6 con owner.
+3) Agenda revisión de riesgos 2 veces por semana (20 min).
+Recap: con esta Fase 6.6 ya tienes un sistema de alerta temprana + decisión ejecutiva + recuperación en 48h para proteger fecha y calidad del MVP.
+Si quieres, seguimos con Fase 6.7: te armo el plan de go-live del piloto (checklist T-14 a T+7, rollback, comunicaciones y soporte).
+[JuvinChat] Perfecto, Jorge. Vamos con la Fase 6.7: Plan de Go‑Live del piloto con ventana controlada, checklist por días, rollback y soporte.
+Objetivo: salir a piloto sin sorpresas y con plan claro si algo falla.
+- [ ] Pregunta rápida (1): ¿el piloto será con 1 sede o con varias sedes desde el día 1?
+## ✅ Plan Go‑Live Piloto (T‑14 a T+7)
+## T‑14 a T‑10 (Preparación final)
+- [ ] Congelar alcance funcional MVP (solo fixes críticos permitidos)
+- [ ] Confirmar lista de usuarios piloto (admins, operadores, aprobadores)
+- [ ] Validar ambientes: staging = espejo razonable de producción
+- [ ] Cerrar checklist de seguridad mínima (MFA, RBAC, logs, backup)
+Entregable: “Go/No-Go Draft v1”
+---
+## T‑9 a T‑7 (Calidad y datos)
+- [ ] Ejecutar UAT guiado con casos reales (CMDB, alertas, e‑Waste)
+- [ ] Correr prueba de carga ligera (picos esperados de piloto)
+- [ ] Hacer dry-run de migración/seed de datos iniciales
+- [ ] Corregir defectos P1/P2 detectados
+Gate: 0 bugs críticos abiertos
+---
+## T‑6 a T‑4 (Operación y soporte)
+- [ ] Definir mesa de soporte piloto (canal, horarios, responsables)
+- [ ] Crear runbooks: incidentes comunes + pasos de resolución
+- [ ] Configurar monitoreo/alertas operativas (latencia, errores, jobs)
+- [ ] Simular incidente y practicar rollback técnico
+Gate: restore de backup probado con evidencia
+---
+## T‑3 a T‑1 (Go/No-Go ejecutivo)
+- [ ] Revisión final de riesgos R1–R6 (fase 6.6)
+- [ ] Confirmar plan de comunicación a usuarios piloto
+- [ ] Reunión Go/No-Go (PO, TL, QA, DevOps, negocio)
+- [ ] Aprobación formal y ventana horaria de despliegue
+Gate de salida (Go):
+- [ ] Seguridad mínima OK
+- [ ] Observabilidad OK
+- [ ] Soporte operativo OK
+- [ ] Rollback ensayado OK
+---
+## T0 (Día de Go‑Live)
+- [ ] Backup previo + tag de release
+- [ ] Deploy con checklist paso a paso
+- [ ] Smoke test inmediato (login, RBAC, activos, alertas, e‑Waste)
+- [ ] Monitoreo intensivo primeras 4 horas
+- [ ] Comunicado “piloto activo” a stakeholders
+---
+## T+1 a T+3 (Hiper-cuidado)
+- [ ] War-room ligera (2 bloques diarios de seguimiento)
+- [ ] Triaging de incidencias por severidad (P1/P2/P3)
+- [ ] Hotfixes controlados (sin meter features nuevas)
+- [ ] Reporte diario corto: estado, incidentes, decisiones
+---
+## T+4 a T+7 (Estabilización)
+- [ ] Revisar métricas de adopción y calidad
+- [ ] Cerrar pendientes críticos
+- [ ] Documentar lecciones aprendidas
+- [ ] Decidir: ampliar piloto / mantener / rollback parcial
+---
+## ✅ Plan de Rollback (simple y ejecutable)
+Disparadores de rollback:
+- [ ] caída prolongada (>30 min) sin recuperación
+- [ ] fallo de seguridad o permisos críticos
+- [ ] corrupción/inconsistencia de datos no contenida
+- [ ] degradación severa de operación del negocio
+Pasos:
+1) [ ] Declarar incidente y congelar cambios
+2) [ ] Revertir versión (release tag anterior)
+3) [ ] Restaurar datos según punto de backup definido
+4) [ ] Ejecutar smoke test de recuperación
+5) [ ] Comunicar estado + ETA + siguiente decisión
+---
+## ✅ Plan de comunicaciones
+Antes (T‑3 a T‑1):
+- [ ] Mensaje a usuarios piloto: fecha, ventana, qué cambia, canal de ayuda
+Durante (T0):
+- [ ] Aviso de inicio y confirmación de finalización
+Después (T+1..T+7):
+- [ ] Resumen diario corto a stakeholders
+- [ ] Resumen semanal: estabilidad, valor, próximos pasos
+---
+## ✅ KPIs de éxito del piloto (semana 1)
+- [ ] Disponibilidad > 99% en horario operativo piloto
+- [ ] 0 incidentes críticos de seguridad
+- [ ] < 5% transacciones con error funcional
+- [ ] Tiempo de respuesta median < 2s (pantallas clave)
+- [ ] UAT negocio: aprobación >= 80% de criterios
+---
+Simple: este plan divide el go-live en preparación, salida y estabilización, con gates claros.
+Ejemplo: si en T‑2 aparece bug crítico en RBAC, se activa No-Go automático, se corrige y se reprograma.
+Práctica (acción mínima hoy):
+- [ ] Agenda reunión Go/No-Go en calendario (T‑2)
+- [ ] Nombra owners de: Deploy, QA final, Soporte, Comunicación
+- [ ] Crea checklist operativo en Jira/Notion con T‑14 a T+7
+Recap: con Fase 6.7 ya tienes un plan real de salida a piloto, incluyendo control de riesgo, rollback y comunicación.
+Si quieres, seguimos con Fase 6.8: te armo la plantilla de Go/No-Go en una sola página + formato de reporte diario del piloto.
+[JuvinChat] Perfecto, Jorge. En Fase 6.8 te dejo exactamente lo que pediste: una plantilla Go/No-Go de 1 página + formato de reporte diario del piloto listo para usar.
+La idea es que puedas decidir rápido, con evidencia, y sin reuniones eternas.
+## 🧾 1) Plantilla Go/No-Go (One Page)
+Cópiala tal cual en Notion/Confluence/Google Doc.
+- [ ] Proyecto:
+- [ ] Release / Versión:
+- [ ] Fecha y hora de decisión:
+- [ ] Entorno objetivo: (Piloto / Producción parcial)
+- [ ] Responsable de decisión (A): (PO/PM)
+### A) Estado de gates críticos (Sí/No + evidencia)
+- [ ] Seguridad mínima OK (MFA, RBAC, auditoría activa)
+Evidencia:
+- [ ] Calidad OK (0 bugs críticos abiertos, P1 controlados)
+Evidencia:
+- [ ] Datos OK (migración/seed validado, consistencia verificada)
+Evidencia:
+- [ ] Observabilidad OK (logs, métricas, alertas operativas)
+Evidencia:
+- [ ] Backup/Restore probado OK
+Evidencia:
+- [ ] Soporte listo OK (canal, horarios, on-call)
+Evidencia:
+### B) Riesgos abiertos (top 3)
+1. Riesgo | Severidad | Mitigación activa | Owner
+2. Riesgo | Severidad | Mitigación activa | Owner
+3. Riesgo | Severidad | Mitigación activa | Owner
+### C) Decisión
+- [ ] GO
+- [ ] NO-GO
+- [ ] GO condicionado (detallar condición y hora límite)
+Motivo de la decisión (3-5 líneas):
+…
+### D) Plan inmediato (próximas 24h)
+- [ ] Acción 1 — Owner — ETA
+- [ ] Acción 2 — Owner — ETA
+- [ ] Acción 3 — Owner — ETA
+Firmas/confirmación: PO/PM | TL | QA | DevOps | Stakeholder negocio
+---
+## 📊 2) Plantilla Reporte Diario del Piloto (T+1 a T+7)
+- [ ] Fecha:
+- [ ] Día de piloto: (T+1, T+2…)
+- [ ] Semáforo general: 🟢 / 🟡 / 🔴
+- [ ] Responsable del reporte:
+### 1) Resumen ejecutivo (5 líneas máx)
+- Estado general:
+- Impacto en usuarios:
+- Decisiones del día:
+### 2) Métricas clave del día
+- [ ] Disponibilidad:
+- [ ] Errores funcionales (%):
+- [ ] Latencia mediana (pantallas clave):
+- [ ] Incidentes P1/P2/P3:
+- [ ] MTTR (si hubo incidentes):
+- [ ] Tickets soporte (abiertos/cerrados):
+### 3) Incidencias relevantes
+- [ ] Incidente | Severidad | Estado | Owner | ETA
+- [ ] Incidente | Severidad | Estado | Owner | ETA
+### 4) Cambios aplicados hoy
+- [ ] Hotfix/ajuste | motivo | validación QA | resultado
+### 5) Riesgos para mañana
+- [ ] Riesgo | Probabilidad/Impacto | mitigación | owner
+### 6) Decisiones requeridas (si aplica)
+- [ ] Decisión | quién decide | deadline
+### 7) Plan próximo día
+- [ ] Prioridad 1
+- [ ] Prioridad 2
+- [ ] Prioridad 3
+---
+## ✅ 3) Criterio de semáforo (estándar rápido)
+- [ ] 🟢 Verde: sin críticos, operación estable, KPIs dentro de rango
+- [ ] 🟡 Amarillo: hay P2 o desvíos moderados, con plan de corrección en curso
+- [ ] 🔴 Rojo: P1 activo, impacto alto o riesgo de seguridad/compliance
+---
+## Ejemplo corto (cómo se ve en práctica)
+Go/No-Go: GO condicionado
+Condición: cerrar bug RBAC de aprobación e‑Waste antes de 10:00 AM.
+Owner: BE + QA.
+Si no se cumple: No-Go y se reprograma ventana 24h.
+---
+## Acción mínima ahora (para dejarlo operativo hoy)
+- [ ] Crear dos páginas: Go-NoGo-OnePager y Pilot-Daily-Report
+- [ ] Asignar owners fijos (PO/TL/QA/DevOps)
+- [ ] Programar envío diario del reporte (misma hora, T+1 a T+7)
+Recap: ya tienes Fase 6.8 cerrada con dos plantillas ejecutivas listas para usar mañana mismo.
+Si quieres, avanzamos a Fase 6.9 y te armo el paquete de cierre de piloto (postmortem, plan de escalamiento y roadmap v1.1).
+[JuvinChat] Perfecto, Jorge. En Fase 6.9 cerramos el piloto de forma profesional: qué aprendimos, si escalamos, y qué entra a v1.1.
+Objetivo: convertir resultados del piloto en decisiones ejecutables, no solo en “feedback”.
+- [ ] Pregunta rápida (1): ¿quieres que el cierre esté orientado a escalar primero en más usuarios o en más sedes?
+## ✅ Fase 6.9 — Paquete de cierre de piloto
+## 1) Postmortem ejecutivo (sin culpa, con acciones)
+- [ ] Qué salió bien (top 3)
+- [ ] Qué salió mal (top 3)
+- [ ] Causas raíz (técnicas + proceso)
+- [ ] Acciones correctivas con owner y fecha
+- [ ] Lecciones para el siguiente despliegue
+Plantilla mínima:
+- Contexto
+- Timeline breve
+- Impacto
+- Root cause
+- Correctivos (30/60 días)
+---
+## 2) Evaluación de éxito del piloto (Go / Hold / Rework)
+Define decisión con umbrales:
+- [ ] Adopción: % usuarios activos piloto (meta sugerida >70%)
+- [ ] Calidad: bugs críticos = 0 al cierre
+- [ ] Operación: disponibilidad >99% en horario objetivo
+- [ ] Soporte: MTTR dentro del objetivo
+- [ ] Negocio: aceptación stakeholder (encuesta corta >= 8/10)
+Decisión:
+- [ ] GO Escalamiento
+- [ ] HOLD (estabilizar 1 ciclo más)
+- [ ] REWORK (ajustes estructurales antes de crecer)
+---
+## 3) Plan de escalamiento (30-60-90 días)
+## 30 días (estabilización)
+- [ ] Cerrar deuda crítica y P2 recurrentes
+- [ ] Endurecer observabilidad y runbooks
+- [ ] Mejorar onboarding y entrenamiento usuarios
+## 60 días (expansión controlada)
+- [ ] Duplicar alcance (usuarios/sedes) con rollout por oleadas
+- [ ] Revisar capacidad de soporte y performance
+- [ ] Ajustar RBAC/políticas según uso real
+## 90 días (consolidación)
+- [ ] KPI de valor (ahorro SAM, trazabilidad e‑Waste, tiempo operativo)
+- [ ] Auditoría de cumplimiento
+- [ ] Cierre de v1.1 y preparación v1.2
+---
+## 4) Roadmap v1.1 (priorizado por valor)
+Propuesta inicial post-piloto:
+- [ ] Alta prioridad: mejoras de precisión discovery, UX dashboard, reglas alertas top
+- [ ] Media prioridad: automatizaciones de soporte, reportes ejecutivos ampliados
+- [ ] Baja prioridad: features “nice-to-have” (móvil, integraciones no críticas)
+Regla: priorizar por Impacto negocio x Frecuencia de uso x Riesgo reducido.
+---
+## 5) Documentos de cierre obligatorios
+- [ ] Informe final de piloto (2-4 páginas)
+- [ ] Postmortem técnico y operativo
+- [ ] Decisión ejecutiva firmada (Go/Hold/Rework)
+- [ ] Plan 30-60-90 aprobado
+- [ ] Backlog v1.1 priorizado y estimado
+---
+## Simple → ejemplo → práctica → recap
+Simple: Fase 6.9 convierte el piloto en decisiones concretas de escalamiento.
+Ejemplo: si disponibilidad fue 99.3% pero adopción 52%, no escalas sedes aún; primero corriges onboarding y UX.
+Práctica (hoy):
+1. [ ] Agenda reunión “Pilot Closure” (60 min).
+2. [ ] Lleva KPIs reales vs metas.
+3. [ ] Sale de esa reunión con una decisión: Go, Hold o Rework.
+Recap: con 6.9 cierras ciclo completo: aprendizaje, decisión y plan de crecimiento.
+Si quieres, arrancamos Fase 7.0: te armo el Executive Pack (1 slide de estado + 1 slide de riesgos + 1 slide de próximos 30 días)
+[JuvinChat] Perfecto, Jorge. Arrancamos Fase 7.0 con un Executive Pack simple y potente para dirección: 3 láminas, 5 minutos, decisiones claras.
+Te dejo el contenido listo para copiar en PowerPoint/Canva/Google Slides.
+- [ ] Pregunta rápida (solo 1): ¿quieres formato para presentar en 5 min (muy ejecutivo) o 15 min (con más detalle)?
+## ✅ Fase 7.0 — Executive Pack (3 slides)
+## Slide 1: Estado general (dónde estamos)
+Título: Estado del programa — MVP / Piloto
+Objetivo: que cualquier directivo entienda situación en 30 segundos.
+- [ ] Semáforo global: 🟢 / 🟡 / 🔴
+- [ ] Avance total: % completado vs plan
+- [ ] Hitos logrados (3):
+- Hito 1
+- Hito 2
+- Hito 3
+- [ ] Desviaciones clave (máx 2):
+- Desviación + impacto
+- [ ] Decisión requerida hoy (1 línea):
+- Ej: “Aprobar expansión a 2da sede en 30 días”
+---
+## Slide 2: Riesgos ejecutivos (qué podría frenar)
+Título: Top riesgos y mitigación activa
+Objetivo: mostrar control, no alarmar sin plan.
+- [ ] Riesgo 1 — Severidad — Owner — Mitigación — ETA
+- [ ] Riesgo 2 — Severidad — Owner — Mitigación — ETA
+- [ ] Riesgo 3 — Severidad — Owner — Mitigación — ETA
+- [ ] Gatillo de escalamiento:
+- Ej: “Si predictibilidad <70% por 2 sprints → recorte automático de alcance”
+Nota visual recomendada: tabla simple con columnas: Riesgo | Nivel | Acción | Responsable | Fecha
+---
+## Slide 3: Próximos 30 días (qué vamos a hacer)
+Título: Plan 30 días — foco en valor
+Objetivo: alinear ejecución con negocio.
+- [ ] Prioridad 1 (impacto alto):
+Resultado esperado + KPI
+- [ ] Prioridad 2:
+Resultado esperado + KPI
+- [ ] Prioridad 3:
+Resultado esperado + KPI
+- [ ] Dependencias / decisiones de dirección (si aplica):
+- Aprobación presupuesto / recursos / ventana operativa
+Cierre de slide (1 línea):
+“Con estas 3 acciones, protegemos estabilidad y habilitamos escalamiento controlado.”
+---
+## Mini-guion de presentación (simple → ejemplo → recap)
+Simple (apertura):
+“Estamos en [semáforo], con [x]% de avance; hoy necesitamos decidir [decisión].”
+Ejemplo (riesgo):
+“El mayor riesgo es [R1], ya mitigado con [acción], y se resuelve el [fecha].”
+Recap (cierre):
+“Si aprobamos [decisión], en 30 días entregamos [resultado medible].”
+---
+## Acción mínima hoy
+- [ ] Crear archivo Executive-Pack-v1 con estas 3 slides
+- [ ] Completar métricas reales (avance, disponibilidad, bugs, adopción)
+- [ ] Ensayar versión de 5 minutos con 1 decisión clara al final
+Si quieres, en el siguiente paso te lo convierto en texto final listo para pegar con números ejemplo realistas (tipo mock ejecutivo).
+[JuvinChat] Perfecto, Jorge. Te preparo un mock ejecutivo listo para pegar en 3 slides, con números realistas de ejemplo.
+La idea es que solo cambies los datos finales y presentes en 5 minutos.
+## Mock Ejecutivo — Executive Pack v1 (ejemplo realista)
+- [ ] Cómo usarlo: copia/pega tal cual en tu deck y reemplaza lo marcado con [] si quieres ajustar.
+---
+## Slide 1 — Estado general
+Título: Estado del programa — MVP / Piloto (Semana 12)
+- [ ] Semáforo global: 🟡 (estable con riesgos controlados)
+- [ ] Avance total: 78% completado vs 82% plan (brecha: -4 pp)
+- [ ] Hitos logrados:
+- MVP funcional en staging (CMDB + Discovery + Dashboard)
+- Piloto activo en 1 sede con 42 usuarios habilitados
+- Flujo e‑Waste con trazabilidad y evidencia de custodia operativo
+- [ ] Desviaciones clave:
+- Retraso en reglas avanzadas de deduplicación (impacto: precisión inicial)
+- 2 integraciones no críticas movidas a v1.1
+- [ ] Decisión requerida hoy:
+Aprobar expansión controlada a 2da sede en 30 días, condicionada a estabilidad semanal.
+Mensaje de cierre de slide:
+“Vamos levemente detrás del plan, pero con entregables críticos activos y riesgo bajo de interrupción.”
+---
+## Slide 2 — Riesgos ejecutivos
+Título: Top riesgos y mitigación activa
+- [ ] R1: Precisión Discovery (duplicados) — Nivel: Alto
+- Mitigación: ajuste fingerprint + umbrales por fuente
+- Owner: TL/BE
+- ETA: 10 días
+- [ ] R2: Carga de soporte en hiper-cuidado — Nivel: Medio
+- Mitigación: runbook + triage P1/P2 + horario extendido temporal
+- Owner: QA/Operaciones
+- ETA: 7 días
+- [ ] R3: Adopción desigual por perfil de usuario — Nivel: Medio
+- Mitigación: microcapacitaciones de 30 min + guía rápida por rol
+- Owner: PO/Change Lead
+- ETA: 14 días
+- [ ] Gatillo ejecutivo vigente:
+Si predictibilidad <70% por 2 sprints o >3 incidentes críticos/semana → activar recorte automático de alcance y plan de estabilización de 1 sprint.
+Mensaje de cierre de slide:
+“Riesgos identificados, con dueños y fecha; no hay riesgo rojo sin plan de respuesta.”
+---
+## Slide 3 — Próximos 30 días
+Título: Plan de 30 días — foco en valor y escalamiento
+- [ ] Prioridad 1: Estabilidad operativa piloto
+- Resultado esperado: disponibilidad >99%
+- KPI: incidentes P1 = 0; MTTR < 90 min
+- [ ] Prioridad 2: Precisión de datos Discovery
+- Resultado esperado: duplicados <3%
+- KPI: tasa de dedupe efectiva semanal
+- [ ] Prioridad 3: Adopción de usuarios clave
+- Resultado esperado: adopción activa >75%
+- KPI: usuarios activos semanales / usuarios habilitados
+- [ ] Decisiones requeridas de dirección:
+- Aprobación de 1 recurso temporal (soporte/capacitación) por 4 semanas
+- Confirmar ventana de despliegue para sede 2 (semana [X])
+Mensaje de cierre de slide:
+“Con estas 3 prioridades, pasamos de piloto estable a escalamiento controlado con impacto medible.”
+---
+## Guion corto para presentarlo (5 min)
+- [ ] Min 1: Estado general y decisión que necesitas hoy.
+- [ ] Min 2-3: Top 3 riesgos + mitigación en marcha.
+- [ ] Min 4: Plan 30 días con KPIs concretos.
+- [ ] Min 5: Confirmación de decisiones ejecutivas y próximos hitos.
+Frase final sugerida:
+“Recomendación: avanzar con expansión controlada, manteniendo guardrails de calidad y estabilidad.”
+---
+Si quieres, siguiente paso te lo dejo en versión “lista para comité” con tono más corporativo (menos operativo) y formato de speech palabra por palabra.
+[9:22 p.m., 4/3/2026] jgael1: [JuvinChat] Perfecto: quieres la versión lista para comité, más corporativa, directa y con narrativa de decisión.
+Aquí la tienes en formato “copiar/pegar” para presentar ante dirección.
+- [ ] Pregunta rápida (opcional): ¿el comité es más financiero o más operativo/tecnológico? (te la adapto en 1 minuto).
+## ✅ Executive Pack — Versión Comité (3 slides + speech)
+## SLIDE 1 — Estado Ejecutivo del Programa
+Título: Estado Ejecutivo — Piloto MVP (Semana 12)
+Contenido (en slide):
+- Estado general: 🟡 En control
+- Avance acumulado: 78% ejecutado vs 82% planificado (desviación: -4 pp)
+- Logros clave:
+- MVP operativo en entorno controlado
+- Piloto en 1 sede con usuarios activos habilitados
+- Flujo e‑Waste con trazabilidad y evidencia operativo
+- Desviaciones relevantes:
+- Ajuste pendiente en deduplicación avanzada
+- 2 integraciones no críticas diferidas a v1.1
+- Decisión solicitada al Comité:
+Aprobar expansión controlada a segunda sede en 30 días, sujeta a KPIs de estabilidad.
+Speech sugerido (45–60 seg):
+“Hoy reportamos un estado amarillo en control: estamos 4 puntos por debajo del plan, pero con los entregables críticos ya operativos. El piloto está activo y con trazabilidad funcional en procesos clave. Las desviaciones actuales no comprometen continuidad del negocio y están contenidas dentro de v1.1. La decisión que traemos al comité es aprobar expansión controlada a una segunda sede en 30 días, condicionada a cumplimiento de estabilidad.”
+---
+## SLIDE 2 — Riesgos Estratégicos y Control
+Título: Riesgos Estratégicos — Situación y Mitigación
+Contenido (en slide):
+1. Precisión de Discovery (duplicados) — Nivel: Alto
+Mitigación: recalibración de fingerprint + umbrales por fuente
+Responsable: TL/Backend | ETA: 10 días
+2. Carga de soporte en hiper-cuidado — Nivel: Medio
+Mitigación: runbook operativo + triage por severidad + soporte extendido temporal
+Responsable: QA/Operaciones | ETA: 7 días
+3. Adopción desigual por perfil de usuario — Nivel: Medio
+Mitigación: capacitación focalizada por rol + guía de uso operativo
+Responsable: PO/Change | ETA: 14 días
+Guardrail ejecutivo (en slide):
+Si predictibilidad <70% por 2 sprints o >3 incidentes críticos/semana → se activa plan automático de estabilización y recorte temporal de alcance.
+Speech sugerido (45–60 seg):
+“Tenemos tres riesgos relevantes, todos con responsable, mitigación y fecha comprometida. Ninguno está sin plan. Además, mantenemos un guardrail ejecutivo para evitar deriva: si cae la predictibilidad o suben incidentes críticos por encima del umbral, entramos automáticamente en modo estabilización. Esto protege fecha, calidad y reputación operativa.”
+---
+## SLIDE 3 — Plan 30 Días y Solicitudes al Comité
+Título: Próximos 30 días — Ejecución con impacto medible
+Contenido (en slide):
+- Prioridad 1: Estabilidad operativa
+- Meta: disponibilidad >99%
+- KPI: P1 = 0; MTTR < 90 min
+- Prioridad 2: Calidad de datos Discovery
+- Meta: duplicados <3%
+- KPI: tasa de dedupe efectiva semanal
+- Prioridad 3: Adopción
+- Meta: >75% usuarios activos semanales
+- KPI: WAU / usuarios habilitados
+Solicitudes al Comité (decisión):
+1. Aprobación de 1 recurso temporal (4 semanas) para soporte/adopción
+2. Validación de ventana para despliegue en sede 2 (semana objetivo)
+Speech sugerido (45–60 seg):
+“El plan de 30 días está orientado a tres resultados: estabilidad, calidad de datos y adopción. Todos con KPIs verificables y seguimiento semanal. Para ejecutar sin fricción, requerimos dos definiciones del comité: un refuerzo temporal de capacidad y la confirmación de la ventana de despliegue para segunda sede.”
+---
+## 🧩 Cierre de comité (guion final, 20 seg)
+“Recomendación ejecutiva: avanzar con expansión controlada, manteniendo guardrails de estabilidad y calidad. Tenemos riesgos identificados, mitigación activa y métricas para gobernar la ejecución sin perder control.”
+---
+## Checklist de uso inmediato
+[9:22 p.m., 4/3/2026] jgael1: - [ ] Pegar este contenido en 3 slides
+- [ ] Ajustar 3 números reales (avance, disponibilidad, adopción)
+- [ ] Ensayar speech de 3 minutos + 2 minutos Q&A
+Si quieres, ahora te hago la versión Q&A de comité con 10 preguntas difíciles y respuestas ejecutivas listas.
+[JuvinChat] Perfecto, Jorge. Te preparo una versión Q&A de comité con preguntas difíciles y respuestas ejecutivas cortas.
+Objetivo: responder con seguridad, sin entrar en tecnicismos innecesarios.
+## ✅ Q&A Ejecutivo (10 preguntas clave)
+## 1) ¿Por qué deberíamos aprobar expansión si estamos en amarillo?
+Respuesta:
+Porque el amarillo está en control, no en crisis. Los entregables críticos ya operan, los riesgos tienen mitigación activa y existen guardrails automáticos. La expansión propuesta es controlada y condicionada a KPIs, no masiva.
+---
+## 2) ¿Cuál es el principal riesgo real hoy?
+Respuesta:
+La precisión de discovery (duplicados). Ya está tratada con recalibración técnica y umbrales por fuente, con ETA definida. Es un riesgo de calidad de dato, no de continuidad operativa.
+---
+## 3) ¿Qué pasa si en 2 semanas no mejoran los KPIs?
+Respuesta:
+Se activa el plan de estabilización: congelamos expansión, priorizamos correcciones críticas por un sprint, y retomamos crecimiento solo al recuperar umbrales. Está predefinido para evitar improvisación.
+---
+## 4) ¿Cuál es el impacto económico esperado de seguir?
+Respuesta:
+En esta fase, el retorno viene por eficiencia operativa y reducción de fricción: menos retrabajo, mejor trazabilidad y mejor control de activos/e‑Waste. El impacto financiero consolidado se reporta al cierre de 60-90 días con datos comparables.
+---
+## 5) ¿Cuánto cuesta no avanzar ahora?
+Respuesta:
+Postergar implica mantener costos de operación manual, pérdida de aprendizaje del piloto y retraso en captura de valor. El costo de espera es mayor que el riesgo de una expansión controlada.
+---
+## 6) ¿Tenemos capacidad de soporte para crecer?
+Respuesta:
+Sí, con una condición: refuerzo temporal de 1 recurso por 4 semanas. Con ese ajuste, mantenemos tiempos de respuesta y evitamos sobrecarga durante hiper-cuidado.
+---
+## 7) ¿Qué evidencia tenemos de adopción real, no solo usuarios habilitados?
+Respuesta:
+Medimos adopción por usuarios activos semanales sobre habilitados (WAU/Enabled), más uso de flujos críticos. No usamos métricas de “registro”; usamos uso efectivo.
+---
+## 8) ¿Qué tendría que pasar para frenar totalmente la expansión?
+Respuesta:
+Tres gatillos: caída de predictibilidad por debajo de umbral en 2 sprints, incidentes críticos recurrentes, o desvío de seguridad/compliance. Si ocurre, paramos expansión automáticamente.
+---
+## 9) ¿Qué decisiones concretas necesita hoy el equipo del comité?
+Respuesta:
+Dos:
+1) Aprobación de expansión controlada a segunda sede (con condiciones KPI).
+2) Aprobación de recurso temporal de soporte/adopción por 4 semanas.
+---
+## 10) ¿Qué compromiso de resultado podemos dar en 30 días?
+Respuesta:
+Compromiso medible: estabilidad >99%, incidentes P1 en cero, reducción de duplicados a objetivo definido y adopción >75% en usuarios objetivo. Reporte semanal al comité.
+---
+## 🎯 Frases de control (por si se pone tensa la reunión)
+- “Buena alerta; ya está contemplada en el guardrail operativo.”
+- “No estamos pidiendo fe: estamos pidiendo aprobación condicionada por métricas.”
+- “Si el indicador cae, el plan se corrige automáticamente; no esperamos al daño.”
+- “Preferimos crecimiento gobernado antes que velocidad sin control.”
+---
+## Mini estructura para responder en vivo (15 segundos)
+Riesgo → control → decisión.
+Ejemplo: “Sí, hay riesgo de adopción; está mitigado con capacitación por rol; por eso pedimos expansión por oleadas, no masiva.”
+---
+Si quieres, te hago la versión final: “script de vocero” de 3 minutos (palabra por palabra) + 1 minuto de cierre persuasivo para pedir aprobación.

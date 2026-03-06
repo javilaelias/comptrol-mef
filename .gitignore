@@ -1,0 +1,20 @@
+**/node_modules/
+**/dist/
+**/.next/
+**/.expo/
+**/.DS_Store
+**/*.log
+
+# env
+**/.env
+**/.env.local
+**/.env.*.local
+
+# prisma
+apps/api/prisma/dev.db
+
+# datos reales (no versionar por defecto)
+docs/*.xlsx
+docs/*.xls
+docs/*.pdf
+!docs/xampp/
