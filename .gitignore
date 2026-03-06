@@ -4,6 +4,8 @@
 **/.expo/
 **/.DS_Store
 **/*.log
+**/bin/
+**/obj/
 
 # env
 **/.env
