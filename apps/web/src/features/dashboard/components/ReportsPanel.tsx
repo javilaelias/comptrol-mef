@@ -19,6 +19,8 @@ export type EwasteTrendPoint = { month: string; count: number };
 export type InventoryBySiteRow = {
   siteId: string | null;
   siteName: string;
+  latitude: number | null;
+  longitude: number | null;
   assetCount: number;
   inventoryValue: number;
 };
@@ -134,4 +136,3 @@ export function ReportsPanel({
     </section>
   );
 }
-

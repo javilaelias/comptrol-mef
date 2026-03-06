@@ -107,6 +107,8 @@ model Site {
   city         String?  @db.VarChar(80)
   addressLine1 String?  @map("address_line1") @db.VarChar(160)
   addressLine2 String?  @map("address_line2") @db.VarChar(160)
+  latitude     Decimal? @map("latitude") @db.Decimal(9, 6)
+  longitude    Decimal? @map("longitude") @db.Decimal(9, 6)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

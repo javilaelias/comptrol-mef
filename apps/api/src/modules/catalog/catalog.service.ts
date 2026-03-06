@@ -9,7 +9,7 @@ export class CatalogService {
     return this.prisma.site.findMany({
       where: { tenantId, isActive: true },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, code: true, city: true },
+      select: { id: true, name: true, code: true, city: true, latitude: true, longitude: true },
     });
   }
 
@@ -31,4 +31,3 @@ export class CatalogService {
     });
   }
 }
-

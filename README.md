@@ -85,6 +85,10 @@ Puertos:
 ## Dashboard
 - ENAD: `http://localhost:3000/enad` (guía + configuración de 2 respuestas manuales)
 - Mapa Perú: se muestra en el dashboard con distribución por sede (coordenadas iniciales deducidas por nombre; luego se puede afinar con lat/lon reales)
+- Configurar coordenadas por sede: `http://localhost:3000/sites`
+
+## Agente (.exe)
+Ver `apps/agent-exe/README.md` para compilar el agente Windows que reporta “heartbeat” al API (`/api/v1/agent/heartbeat`).
 
 ## XAMPP (Apache reverse proxy)
 Ver `docs/xampp/apache-reverse-proxy.conf` para el snippet de configuración.

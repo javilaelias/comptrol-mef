@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "nVsWlFcFQus=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\javila\\Documents\\mef\\Gobierno TI\\Proyecto GTI\\Comptrol-MEF\\apps\\agent-exe\\Comptrol.Agent\\Comptrol.Agent.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\javila\\.nuget\\packages\\system.codedom\\9.0.0\\system.codedom.9.0.0.nupkg.sha512",
+    "C:\\Users\\javila\\.nuget\\packages\\system.management\\9.0.0\\system.management.9.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

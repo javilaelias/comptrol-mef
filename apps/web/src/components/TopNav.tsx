@@ -46,6 +46,7 @@ export function TopNav({ title }: { title?: string }) {
           {navItem('/dashboard', 'Dashboard')}
           {navItem('/assets', 'Activos')}
           {navItem('/applications', 'Apps')}
+          {navItem('/sites', 'Sedes')}
           {navItem('/enad', 'ENAD')}
           <button
             className="rounded-xl border border-[color:var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-black hover:border-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-weak)]"
@@ -61,4 +62,3 @@ export function TopNav({ title }: { title?: string }) {
     </header>
   );
 }
-

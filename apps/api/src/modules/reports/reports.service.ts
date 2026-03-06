@@ -51,6 +51,8 @@ export class ReportsService {
       Array<{
         site_id: string | null;
         site_name: string;
+        latitude: any | null;
+        longitude: any | null;
         asset_count: number;
         inventory_value: string;
       }>
@@ -58,19 +60,23 @@ export class ReportsService {
       SELECT
         s.id AS site_id,
         COALESCE(s.name, 'Sin sede') AS site_name,
+        s.latitude AS latitude,
+        s.longitude AS longitude,
         COUNT(a.id)::int AS asset_count,
         COALESCE(SUM(a.current_book_value), 0)::text AS inventory_value
       FROM assets a
       LEFT JOIN locations l ON l.id = a.location_id
       LEFT JOIN sites s ON s.id = l.site_id
       WHERE a.tenant_id = ${tenantId}::uuid
-      GROUP BY s.id, s.name
+      GROUP BY s.id, s.name, s.latitude, s.longitude
       ORDER BY COALESCE(SUM(a.current_book_value), 0) DESC
     `);
 
     return rows.map((r) => ({
       siteId: r.site_id,
       siteName: r.site_name,
+      latitude: r.latitude !== null ? Number(r.latitude) : null,
+      longitude: r.longitude !== null ? Number(r.longitude) : null,
       assetCount: Number(r.asset_count),
       inventoryValue: Number(r.inventory_value),
     }));

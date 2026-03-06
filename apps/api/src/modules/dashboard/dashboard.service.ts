@@ -6,7 +6,11 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMetrics(tenantId: string) {
-    const [totalAssets, ewasteCandidates, licenseAgg, inventoryAgg] = await Promise.all([
+    const now = Date.now();
+    const since24h = new Date(now - 24 * 60 * 60 * 1000);
+    const stale30dCutoff = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    const [totalAssets, ewasteCandidates, licenseAgg, inventoryAgg, reporting24h, staleAssets30d] = await Promise.all([
       this.prisma.asset.count({ where: { tenantId } }),
       this.prisma.asset.count({ where: { tenantId, status: { in: ['in_stock', 'retired', 'disposed'] } } }),
       this.prisma.softwareLicense.aggregate({
@@ -16,6 +20,16 @@ export class DashboardService {
       this.prisma.asset.aggregate({
         where: { tenantId },
         _sum: { currentBookValue: true },
+      }),
+      this.prisma.asset.count({
+        where: { tenantId, status: 'in_use', lastSeenAt: { gte: since24h } },
+      }),
+      this.prisma.asset.count({
+        where: {
+          tenantId,
+          status: 'in_use',
+          OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: stale30dCutoff } }],
+        },
       }),
     ]);
 
@@ -27,6 +41,8 @@ export class DashboardService {
       inactiveLicenses,
       ewasteCandidates,
       inventoryValue,
+      reporting24h,
+      staleAssets30d,
     };
   }
 }

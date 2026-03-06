@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 export type InventoryBySiteRow = {
   siteId: string | null;
   siteName: string;
+  latitude: number | null;
+  longitude: number | null;
   assetCount: number;
   inventoryValue: number;
 };
@@ -59,7 +61,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
   const points = useMemo(() => {
     return (rows ?? [])
       .map((r) => {
-        const coords = inferCoords(r.siteName);
+        const coords = r.latitude !== null && r.longitude !== null ? ([r.latitude, r.longitude] as LatLng) : inferCoords(r.siteName);
         if (!coords) return null;
         return { ...r, coords };
       })
@@ -132,7 +134,9 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold tracking-tight text-black">Mapa Perú — distribución de activos</h2>
-          <p className="mt-1 text-sm text-black/75">Círculos más grandes = más activos. Coordenadas iniciales deducidas por nombre de sede.</p>
+          <p className="mt-1 text-sm text-black/75">
+            Círculos más grandes = más activos. Si una sede no tiene coordenadas, se usa una aproximación por nombre; puedes corregirlo en “Sedes”.
+          </p>
         </div>
       </div>
       <div ref={mapEl} className="mt-4 h-[420px] w-full overflow-hidden rounded-2xl border border-[color:var(--color-border)]" />
