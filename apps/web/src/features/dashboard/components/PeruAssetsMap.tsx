@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 export type InventoryBySiteRow = {
   siteId: string | null;
@@ -57,6 +57,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<any>(null);
   const leafletRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
 
   const points = useMemo(() => {
     return (rows ?? [])
@@ -93,6 +94,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
 
       const layer = L.layerGroup().addTo(map);
       (map as any)._comptrolLayer = layer;
+      setReady(true);
     }
 
     init();
@@ -107,6 +109,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     if (!mapInstance.current) return;
 
     const map = mapInstance.current;
@@ -127,7 +130,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
       }).addTo(layer);
       m.bindPopup(`<b>${p.siteName}</b><br/>Activos: ${p.assetCount.toLocaleString('es-PE')}`);
     }
-  }, [points]);
+  }, [points, ready]);
 
   return (
     <section className="mt-6 rounded-2xl border border-[color:var(--color-border)] bg-white p-5 shadow-sm">
@@ -136,6 +139,9 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
           <h2 className="text-lg font-extrabold tracking-tight text-black">Mapa Perú — distribución de activos</h2>
           <p className="mt-1 text-sm text-black/75">
             Círculos más grandes = más activos. Si una sede no tiene coordenadas, se usa una aproximación por nombre; puedes corregirlo en “Sedes”.
+          </p>
+          <p className="mt-1 text-xs text-black/60">
+            Marcadores: {points.length.toLocaleString('es-PE')} {points.length === 1 ? 'sede' : 'sedes'}.
           </p>
         </div>
       </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
 type AssetListItem = {
@@ -40,6 +41,7 @@ const ASSET_TYPES = [
 
 export default function AssetsPage() {
   const router = useRouter();
+  useRequireAuth();
   const [search, setSearch] = useState('');
   const [data, setData] = useState<AssetListResponse | null>(null);
   const [loading, setLoading] = useState(true);

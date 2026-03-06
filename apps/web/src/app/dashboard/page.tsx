@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { ItamKpiDashboard, type DashboardMetrics } from '@/features/dashboard/components/ItamKpiDashboard';
 import { ReportsPanel, type EwasteTrendPoint, type InventoryBySiteRow, type StaleAsset } from '@/features/dashboard/components/ReportsPanel';
 import { TopNav } from '@/components/TopNav';
@@ -12,6 +13,7 @@ import { PeruAssetsMap } from '@/features/dashboard/components/PeruAssetsMap';
 
 export default function DashboardPage() {
   const router = useRouter();
+  useRequireAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [staleAssets, setStaleAssets] = useState<StaleAsset[]>([]);
   const [ewasteTrend, setEwasteTrend] = useState<EwasteTrendPoint[]>([]);

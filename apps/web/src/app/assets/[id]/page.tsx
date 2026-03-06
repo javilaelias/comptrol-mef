@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
 type Asset = {
@@ -27,6 +28,7 @@ type OrgUnit = { id: string; name: string };
 
 export default function AssetDetailPage() {
   const router = useRouter();
+  useRequireAuth();
   const params = useParams<{ id: string }>();
   const id = params.id;
 

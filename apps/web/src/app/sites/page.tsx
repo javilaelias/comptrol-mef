@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
 type SiteRow = {
@@ -18,6 +19,7 @@ type SiteRow = {
 
 export default function SitesPage() {
   const router = useRouter();
+  useRequireAuth();
   const [items, setItems] = useState<SiteRow[]>([]);
   const [filter, setFilter] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -171,4 +173,3 @@ export default function SitesPage() {
     </main>
   );
 }
-

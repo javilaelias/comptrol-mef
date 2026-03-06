@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 import type { EnadSummary } from '@/features/dashboard/components/EnadSummaryPanel';
 
@@ -37,6 +38,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export default function EnadConfigPage() {
   const router = useRouter();
+  useRequireAuth();
   const [summary, setSummary] = useState<EnadSummary | null>(null);
   const [opts10, setOpts10] = useState<Array<{ code: string; label: string }>>([]);
   const [opts11, setOpts11] = useState<Array<{ code: string; label: string }>>([]);
@@ -251,4 +253,3 @@ export default function EnadConfigPage() {
     </main>
   );
 }
-

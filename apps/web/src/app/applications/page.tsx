@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
 type Application = {
@@ -18,6 +19,7 @@ type ListResponse = { items: Application[]; total: number; take: number; skip: n
 
 export default function ApplicationsPage() {
   const router = useRouter();
+  useRequireAuth();
   const [search, setSearch] = useState('');
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);

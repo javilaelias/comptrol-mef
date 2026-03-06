@@ -6,6 +6,7 @@
 **/*.log
 **/bin/
 **/obj/
+apps/agent-exe/out/
 
 # env
 **/.env
