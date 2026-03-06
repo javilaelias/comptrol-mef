@@ -9,6 +9,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LicensesModule } from './modules/licenses/licenses.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { EnadModule } from './modules/enad/enad.module';
+import { AgentModule } from './modules/agent/agent.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { PrismaModule } from './prisma/prisma.module';
     LicensesModule,
     ReportsModule,
     EnadModule,
+    AgentModule,
   ],
   controllers: [AppController],
   providers: [],
