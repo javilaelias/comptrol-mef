@@ -120,8 +120,8 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
       const radius = Math.max(6, Math.min(20, Math.sqrt(p.assetCount)));
       const m = L.circleMarker(p.coords, {
         radius,
-        color: 'var(--brand)',
-        fillColor: 'var(--brand)',
+        color: '#d0021b',
+        fillColor: '#d0021b',
         fillOpacity: 0.5,
         weight: 2,
       }).addTo(layer);
