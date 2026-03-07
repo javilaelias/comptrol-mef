@@ -8,6 +8,14 @@
 **/obj/
 apps/agent-exe/out/
 
+# MCP local configs (no versionar)
+.vscode/mcp.json
+.cursor/mcp.json
+mcp/bin/
+
+# binarios locales (no versionar)
+apps/web/public/agent/*.exe
+
 # env
 **/.env
 **/.env.local
