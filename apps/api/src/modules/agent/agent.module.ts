@@ -8,4 +8,3 @@ import { AgentService } from './agent.service';
   providers: [AgentService, AgentKeyGuard],
 })
 export class AgentModule {}
-

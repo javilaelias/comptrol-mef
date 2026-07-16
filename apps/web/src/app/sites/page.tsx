@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
@@ -33,14 +34,14 @@ export default function SitesPage() {
         const rows = await apiFetch<SiteRow[]>('/sites');
         if (cancelled) return;
         setItems(rows);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        if (err?.status === 401) {
+        if (getErrorStatus(err) === 401) {
           clearToken();
           router.push('/login');
           return;
         }
-        setError(String(err?.message ?? err));
+        setError(getErrorMessage(err));
       }
     }
     load();
@@ -67,13 +68,13 @@ export default function SitesPage() {
         method: 'PATCH',
         body: JSON.stringify({ latitude: row.latitude, longitude: row.longitude }),
       });
-    } catch (err: any) {
-      if (err?.status === 401) {
+    } catch (err: unknown) {
+      if (getErrorStatus(err) === 401) {
         clearToken();
         router.push('/login');
         return;
       }
-      setError(String(err?.message ?? err));
+      setError(getErrorMessage(err));
     } finally {
       setSavingId(null);
     }

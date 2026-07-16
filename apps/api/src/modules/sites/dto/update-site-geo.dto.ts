@@ -13,4 +13,3 @@ export class UpdateSiteGeoDto {
   @Max(180)
   longitude?: number | null;
 }
-

@@ -14,19 +14,39 @@ export class LicenseHoldingsService {
       category,
       take,
       skip,
-    }: { search?: string; executingUnit?: string; category?: string; take: number; skip: number },
+    }: {
+      search?: string;
+      executingUnit?: string;
+      category?: string;
+      take: number;
+      skip: number;
+    },
   ) {
     const q = search?.trim();
 
     const where: Prisma.LicenseHoldingWhereInput = {
       tenantId,
-      ...(executingUnit ? { executingUnit: { contains: executingUnit.trim(), mode: 'insensitive' } } : {}),
-      ...(category ? { category: { contains: category.trim(), mode: 'insensitive' } } : {}),
+      ...(executingUnit
+        ? {
+            executingUnit: {
+              contains: executingUnit.trim(),
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(category
+        ? { category: { contains: category.trim(), mode: 'insensitive' } }
+        : {}),
       ...(q ? { softwareName: { contains: q, mode: 'insensitive' } } : {}),
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.licenseHolding.findMany({ where, take, skip, orderBy: [{ softwareName: 'asc' }, { executingUnit: 'asc' }] }),
+      this.prisma.licenseHolding.findMany({
+        where,
+        take,
+        skip,
+        orderBy: [{ softwareName: 'asc' }, { executingUnit: 'asc' }],
+      }),
       this.prisma.licenseHolding.count({ where }),
     ]);
 
@@ -65,4 +85,3 @@ export class LicenseHoldingsService {
     }));
   }
 }
-

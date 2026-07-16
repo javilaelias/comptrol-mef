@@ -7,4 +7,3 @@ import { LicenseHoldingsService } from './license-holdings.service';
   providers: [LicenseHoldingsService],
 })
 export class LicensesModule {}
-

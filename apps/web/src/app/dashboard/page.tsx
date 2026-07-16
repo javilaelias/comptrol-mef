@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { ItamKpiDashboard, type DashboardMetrics } from '@/features/dashboard/components/ItamKpiDashboard';
 import { ReportsPanel, type EwasteTrendPoint, type InventoryBySiteRow, type StaleAsset } from '@/features/dashboard/components/ReportsPanel';
@@ -42,14 +43,14 @@ export default function DashboardPage() {
         setEwasteTrend(e);
         setInventoryBySite(i);
         setEnadSummary(enad);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        if (err?.status === 401) {
+        if (getErrorStatus(err) === 401) {
           clearToken();
           router.push('/login');
           return;
         }
-        setError(String(err?.message ?? err));
+        setError(getErrorMessage(err));
       } finally {
         if (!cancelled) setLoading(false);
       }

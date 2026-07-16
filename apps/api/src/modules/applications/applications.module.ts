@@ -7,4 +7,3 @@ import { ApplicationsService } from './applications.service';
   providers: [ApplicationsService],
 })
 export class ApplicationsModule {}
-

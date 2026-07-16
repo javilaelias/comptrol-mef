@@ -19,8 +19,11 @@ export class SitesController {
 
   @Patch(':id/geo')
   @Roles('super_admin', 'it_admin')
-  async updateGeo(@CurrentUser() user: JwtUserPayload, @Param('id') id: string, @Body() dto: UpdateSiteGeoDto) {
+  async updateGeo(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateSiteGeoDto,
+  ) {
     return this.sites.updateGeo(user.tenantId, user.sub, id, dto);
   }
 }
-

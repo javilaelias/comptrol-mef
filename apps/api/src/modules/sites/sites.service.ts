@@ -11,9 +11,18 @@ export class SitesService {
       this.prisma.site.findMany({
         where: { tenantId, isActive: true },
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, code: true, city: true, latitude: true, longitude: true },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          city: true,
+          latitude: true,
+          longitude: true,
+        },
       }),
-      this.prisma.$queryRaw<Array<{ site_id: string; asset_count: number }>>(Prisma.sql`
+      this.prisma.$queryRaw<
+        Array<{ site_id: string; asset_count: number }>
+      >(Prisma.sql`
         SELECT
           s.id AS site_id,
           COUNT(a.id)::int AS asset_count
@@ -25,7 +34,9 @@ export class SitesService {
       `),
     ]);
 
-    const countBySite = new Map(counts.map((c) => [c.site_id, Number(c.asset_count)]));
+    const countBySite = new Map(
+      counts.map((c) => [c.site_id, Number(c.asset_count)]),
+    );
 
     return sites.map((s) => ({
       ...s,
@@ -41,14 +52,20 @@ export class SitesService {
     siteId: string,
     geo: { latitude?: number | null; longitude?: number | null },
   ) {
-    const before = await this.prisma.site.findFirst({ where: { tenantId, id: siteId } });
+    const before = await this.prisma.site.findFirst({
+      where: { tenantId, id: siteId },
+    });
     if (!before) return null;
 
     const site = await this.prisma.site.update({
       where: { id: siteId },
       data: {
         latitude:
-          geo.latitude === undefined ? undefined : geo.latitude === null ? null : new Prisma.Decimal(String(geo.latitude)),
+          geo.latitude === undefined
+            ? undefined
+            : geo.latitude === null
+              ? null
+              : new Prisma.Decimal(String(geo.latitude)),
         longitude:
           geo.longitude === undefined
             ? undefined
@@ -79,4 +96,3 @@ export class SitesService {
     };
   }
 }
-

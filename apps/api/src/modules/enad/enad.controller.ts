@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { JwtUserPayload } from '../auth/jwt.strategy';
@@ -16,7 +25,10 @@ export class EnadController {
   }
 
   @Get('summary')
-  async summary(@CurrentUser() user: JwtUserPayload, @Query('year', new ParseIntPipe({ optional: true })) year?: number) {
+  async summary(
+    @CurrentUser() user: JwtUserPayload,
+    @Query('year', new ParseIntPipe({ optional: true })) year?: number,
+  ) {
     return this.enad.getSummary(user.tenantId, year);
   }
 
@@ -24,13 +36,17 @@ export class EnadController {
   async items(
     @CurrentUser() user: JwtUserPayload,
     @Param('year', ParseIntPipe) year: number,
-    @Query('questionCode', new ParseIntPipe({ optional: true })) questionCode?: number,
+    @Query('questionCode', new ParseIntPipe({ optional: true }))
+    questionCode?: number,
   ) {
     return this.enad.listItems(user.tenantId, year, questionCode);
   }
 
   @Get('surveys/:year/manual-answers')
-  async manualAnswers(@CurrentUser() user: JwtUserPayload, @Param('year', ParseIntPipe) year: number) {
+  async manualAnswers(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('year', ParseIntPipe) year: number,
+  ) {
     return this.enad.getManualAnswers(user.tenantId, year);
   }
 
@@ -44,4 +60,3 @@ export class EnadController {
     return this.enad.upsertManualAnswer(user.tenantId, year, questionCode, dto);
   }
 }
-

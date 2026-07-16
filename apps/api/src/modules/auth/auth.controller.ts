@@ -11,4 +11,3 @@ export class AuthController {
     return this.auth.login(dto.email, dto.password);
   }
 }
-

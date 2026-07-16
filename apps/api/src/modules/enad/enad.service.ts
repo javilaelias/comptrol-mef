@@ -14,7 +14,12 @@ export class EnadService {
     return this.prisma.enadSurvey.findMany({
       where: { tenantId },
       orderBy: { year: 'desc' },
-      select: { year: true, asOfDate: true, sourceDocument: true, updatedAt: true },
+      select: {
+        year: true,
+        asOfDate: true,
+        sourceDocument: true,
+        updatedAt: true,
+      },
     });
   }
 
@@ -39,7 +44,14 @@ export class EnadService {
     const items = await this.prisma.enadItem.findMany({
       where: { surveyId: survey.id, ...(questionCode ? { questionCode } : {}) },
       orderBy: [{ questionCode: 'asc' }, { code: 'asc' }],
-      select: { code: true, questionCode: true, label: true, value1: true, value2: true, valueText: true },
+      select: {
+        code: true,
+        questionCode: true,
+        label: true,
+        value1: true,
+        value2: true,
+        valueText: true,
+      },
     });
     return {
       available: true,
@@ -62,7 +74,12 @@ export class EnadService {
     const answers = await this.prisma.enadManualAnswer.findMany({
       where: { surveyId: survey.id },
       orderBy: { questionCode: 'asc' },
-      select: { questionCode: true, selectedOptionCodes: true, answerText: true, updatedAt: true },
+      select: {
+        questionCode: true,
+        selectedOptionCodes: true,
+        answerText: true,
+        updatedAt: true,
+      },
     });
 
     return { available: true, survey, answers };
@@ -77,7 +94,9 @@ export class EnadService {
     const survey = await this.getSurveyByYear(tenantId, year);
     if (!survey) return { available: false };
 
-    const selectedOptionCodes = (data.selectedOptionCodes ?? []).map((s) => String(s).slice(0, 40));
+    const selectedOptionCodes = (data.selectedOptionCodes ?? []).map((s) =>
+      String(s).slice(0, 40),
+    );
     const answerText = data.answerText ?? null;
 
     const saved = await this.prisma.enadManualAnswer.upsert({
@@ -92,24 +111,44 @@ export class EnadService {
         selectedOptionCodes,
         answerText,
       },
-      select: { questionCode: true, selectedOptionCodes: true, answerText: true, updatedAt: true },
+      select: {
+        questionCode: true,
+        selectedOptionCodes: true,
+        answerText: true,
+        updatedAt: true,
+      },
     });
 
     return { available: true, survey, answer: saved };
   }
 
   async getSummary(tenantId: string, year?: number) {
-    const survey = year ? await this.getSurveyByYear(tenantId, year) : await this.getLatestSurvey(tenantId);
+    const survey = year
+      ? await this.getSurveyByYear(tenantId, year)
+      : await this.getLatestSurvey(tenantId);
     if (!survey) return { available: false };
 
     const [items, manualAnswers, assetsByType] = await Promise.all([
       this.prisma.enadItem.findMany({
-        where: { surveyId: survey.id, questionCode: { in: [10, 11, 14, 16, 18, 20] } },
-        select: { questionCode: true, code: true, label: true, value1: true, value2: true },
+        where: {
+          surveyId: survey.id,
+          questionCode: { in: [10, 11, 14, 16, 18, 20] },
+        },
+        select: {
+          questionCode: true,
+          code: true,
+          label: true,
+          value1: true,
+          value2: true,
+        },
       }),
       this.prisma.enadManualAnswer.findMany({
         where: { surveyId: survey.id, questionCode: { in: [10, 11] } },
-        select: { questionCode: true, selectedOptionCodes: true, answerText: true },
+        select: {
+          questionCode: true,
+          selectedOptionCodes: true,
+          answerText: true,
+        },
       }),
       this.prisma.asset.groupBy({
         by: ['assetType'],
@@ -122,7 +161,8 @@ export class EnadService {
     const manualByQ = new Map(manualAnswers.map((a) => [a.questionCode, a]));
 
     const selectedLabel = (questionCode: number) => {
-      const code = manualByQ.get(questionCode)?.selectedOptionCodes?.[0] ?? null;
+      const code =
+        manualByQ.get(questionCode)?.selectedOptionCodes?.[0] ?? null;
       if (!code) return { code: null, label: null };
       const option = byCode.get(code);
       return { code, label: option?.label ?? null };
@@ -152,7 +192,9 @@ export class EnadService {
       const inUse = decToNumber(byCode.get(`${prefix}.in_use`)?.value1);
       const avgAge = decToNumber(byCode.get(`${prefix}.avg_age_years`)?.value1);
       const noUse = decToNumber(byCode.get(`${prefix}.no_use`)?.value1);
-      const notOperational = decToNumber(byCode.get(`${prefix}.not_operational`)?.value1);
+      const notOperational = decToNumber(
+        byCode.get(`${prefix}.not_operational`)?.value1,
+      );
       return { inUse, avgAgeYears: avgAge, noUse, notOperational };
     };
 
@@ -182,7 +224,9 @@ export class EnadService {
       available: true,
       survey,
       cmdb: {
-        assetsByType: Object.fromEntries(assetsByType.map((r) => [r.assetType, r._count._all])),
+        assetsByType: Object.fromEntries(
+          assetsByType.map((r) => [r.assetType, r._count._all]),
+        ),
       },
       institutional: {
         personnel: selectedLabel(10),

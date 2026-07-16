@@ -15,7 +15,10 @@ export class CatalogController {
   }
 
   @Get('locations')
-  async locations(@CurrentUser() user: JwtUserPayload, @Query('siteId') siteId?: string) {
+  async locations(
+    @CurrentUser() user: JwtUserPayload,
+    @Query('siteId') siteId?: string,
+  ) {
     return this.catalog.locations(user.tenantId, siteId);
   }
 
@@ -24,4 +27,3 @@ export class CatalogController {
     return this.catalog.orgUnits(user.tenantId);
   }
 }
-

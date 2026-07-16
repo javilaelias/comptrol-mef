@@ -1,4 +1,10 @@
-import { Controller, Get, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { JwtUserPayload } from '../auth/jwt.strategy';
@@ -37,4 +43,3 @@ export class LicenseHoldingsController {
     return this.holdings.summaryByExecutingUnit(user.tenantId);
   }
 }
-

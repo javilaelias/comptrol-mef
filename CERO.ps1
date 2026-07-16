@@ -329,7 +329,7 @@ $GithubToken = if ($SetupMcp -and [string]::IsNullOrWhiteSpace($GithubToken)) { 
 
 $McpWorkspaceRoot = if ([string]::IsNullOrWhiteSpace($McpWorkspaceRoot)) { $PSScriptRoot } else { $McpWorkspaceRoot }
 
-$dbUrl = "postgresql://$PostgresUser:$PostgresPassword@$PostgresHost`:$PostgresPort/$DatabaseName?schema=public"
+$dbUrl = "postgresql://${PostgresUser}:$PostgresPassword@${PostgresHost}`:$PostgresPort/$DatabaseName?schema=public"
 Ensure-ApiEnvFile -DbUrl $dbUrl -AgentKey $AgentApiKey
 Try-Create-DatabaseIfMissing -DbName $DatabaseName
 

@@ -8,7 +8,10 @@ import { UpdateApplicationDto } from './dto/update-application.dto';
 export class ApplicationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(tenantId: string, { search, take, skip }: { search?: string; take: number; skip: number }) {
+  async list(
+    tenantId: string,
+    { search, take, skip }: { search?: string; take: number; skip: number },
+  ) {
     const q = search?.trim();
     const where: Prisma.ApplicationWhereInput = {
       tenantId,
@@ -24,7 +27,12 @@ export class ApplicationsService {
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.application.findMany({ where, take, skip, orderBy: { updatedAt: 'desc' } }),
+      this.prisma.application.findMany({
+        where,
+        take,
+        skip,
+        orderBy: { updatedAt: 'desc' },
+      }),
       this.prisma.application.count({ where }),
     ]);
     return { items, total, take, skip };
@@ -34,7 +42,11 @@ export class ApplicationsService {
     return this.prisma.application.findFirst({ where: { tenantId, id } });
   }
 
-  async create(tenantId: string, actorUserId: string, dto: CreateApplicationDto) {
+  async create(
+    tenantId: string,
+    actorUserId: string,
+    dto: CreateApplicationDto,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const app = await tx.application.create({
         data: {
@@ -63,9 +75,16 @@ export class ApplicationsService {
     });
   }
 
-  async update(tenantId: string, actorUserId: string, id: string, dto: UpdateApplicationDto) {
+  async update(
+    tenantId: string,
+    actorUserId: string,
+    id: string,
+    dto: UpdateApplicationDto,
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const before = await tx.application.findFirst({ where: { tenantId, id } });
+      const before = await tx.application.findFirst({
+        where: { tenantId, id },
+      });
       if (!before) return null;
 
       const app = await tx.application.update({
@@ -97,7 +116,9 @@ export class ApplicationsService {
 
   async remove(tenantId: string, actorUserId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const before = await tx.application.findFirst({ where: { tenantId, id } });
+      const before = await tx.application.findFirst({
+        where: { tenantId, id },
+      });
       if (!before) return null;
 
       await tx.application.delete({ where: { id } });

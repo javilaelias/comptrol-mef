@@ -14,4 +14,3 @@ export class DashboardController {
     return this.dashboard.getMetrics(user.tenantId);
   }
 }
-

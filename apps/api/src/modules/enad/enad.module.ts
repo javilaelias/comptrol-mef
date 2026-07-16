@@ -7,4 +7,3 @@ import { EnadService } from './enad.service';
   providers: [EnadService],
 })
 export class EnadModule {}
-

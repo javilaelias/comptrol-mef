@@ -10,9 +10,21 @@ export class DashboardService {
     const since24h = new Date(now - 24 * 60 * 60 * 1000);
     const stale30dCutoff = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-    const [totalAssets, ewasteCandidates, licenseAgg, inventoryAgg, reporting24h, staleAssets30d] = await Promise.all([
+    const [
+      totalAssets,
+      ewasteCandidates,
+      licenseAgg,
+      inventoryAgg,
+      reporting24h,
+      staleAssets30d,
+    ] = await Promise.all([
       this.prisma.asset.count({ where: { tenantId } }),
-      this.prisma.asset.count({ where: { tenantId, status: { in: ['in_stock', 'retired', 'disposed'] } } }),
+      this.prisma.asset.count({
+        where: {
+          tenantId,
+          status: { in: ['in_stock', 'retired', 'disposed'] },
+        },
+      }),
       this.prisma.softwareLicense.aggregate({
         where: { tenantId },
         _sum: { totalSeats: true },

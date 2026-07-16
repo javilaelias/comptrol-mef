@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
@@ -68,13 +69,13 @@ export default function AssetsPage() {
 
       const res = await apiFetch<AssetListResponse>(`/assets?${q.toString()}`);
       setData(res);
-    } catch (err: any) {
-      if (err?.status === 401) {
+    } catch (err: unknown) {
+      if (getErrorStatus(err) === 401) {
         clearToken();
         router.push('/login');
         return;
       }
-      setError(String(err?.message ?? err));
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export default function AssetsPage() {
             <select
               className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
               value={createType}
-              onChange={(e) => setCreateType(e.target.value as any)}
+              onChange={(e) => setCreateType(e.target.value as (typeof ASSET_TYPES)[number])}
             >
               {ASSET_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -136,8 +137,8 @@ export default function AssetsPage() {
                     setCreateAssetTag('');
                     setCreateDescription('');
                     await load(0);
-                  } catch (err: any) {
-                    setError(String(err?.message ?? err));
+                  } catch (err: unknown) {
+                    setError(getErrorMessage(err));
                   } finally {
                     setCreating(false);
                   }
@@ -218,8 +219,8 @@ export default function AssetsPage() {
                                 try {
                                   await apiFetch(`/assets/${a.id}`, { method: 'DELETE' });
                                   await load(data.skip);
-                                } catch (err: any) {
-                                  setError(String(err?.message ?? err));
+                                } catch (err: unknown) {
+                                  setError(getErrorMessage(err));
                                 }
                               }}
                             >

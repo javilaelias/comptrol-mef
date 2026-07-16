@@ -100,4 +100,3 @@ export class UpdateAssetDto {
   @IsNumber()
   currentBookValue?: number;
 }
-

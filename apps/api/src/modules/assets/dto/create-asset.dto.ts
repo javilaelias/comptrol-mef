@@ -98,4 +98,3 @@ export class CreateAssetDto {
   @IsNumber()
   currentBookValue?: number;
 }
-

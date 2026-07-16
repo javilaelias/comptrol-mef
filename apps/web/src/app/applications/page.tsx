@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
@@ -34,13 +35,13 @@ export default function ApplicationsPage() {
       q.set('take', '50');
       q.set('skip', '0');
       setData(await apiFetch<ListResponse>(`/applications?${q.toString()}`));
-    } catch (err: any) {
-      if (err?.status === 401) {
+    } catch (err: unknown) {
+      if (getErrorStatus(err) === 401) {
         clearToken();
         router.push('/login');
         return;
       }
-      setError(String(err?.message ?? err));
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -42,4 +42,3 @@ export class DiscoveryIngestDto {
   @IsEnum(DiscoverySource)
   source!: DiscoverySource;
 }
-

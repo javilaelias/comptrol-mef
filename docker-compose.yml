@@ -1,0 +1,113 @@
+services:
+  db:
+    image: postgres:15
+    container_name: comptrol-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: comptrol
+    ports:
+      - "5432:5432"
+    volumes:
+      - comptrol_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d comptrol"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  import-docs:
+    image: node:20
+    container_name: comptrol-import-docs
+    profiles: ["jobs"]
+    working_dir: /apps/importer
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./apps/api/.env.docker
+    environment:
+      DOCS_DIR: "/docs"
+    volumes:
+      - ./apps:/apps
+      - importer_node_modules:/apps/importer/node_modules
+      - ./docs:/docs:ro
+    command: >
+      sh -lc "test -x node_modules/.bin/ts-node || npm ci --workspaces=false;
+      npm run import:docs"
+
+  api:
+    image: node:20
+    container_name: comptrol-api
+    profiles: ["app"]
+    working_dir: /app
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./apps/api/.env.docker
+    environment:
+      NODE_ENV: "${API_NODE_ENV:-development}"
+      PORT: "3001"
+      CHOKIDAR_USEPOLLING: "true"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}"
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/api:/app
+      - api_node_modules:/app/node_modules
+    command: >
+      sh -lc "test -x node_modules/.bin/nest || npm ci;
+      npm run start:dev"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"const http=require('http');const req=http.get('http://localhost:3001/api/v1/health/ready',res=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000);\"",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    image: node:20
+    container_name: comptrol-web
+    profiles: ["app"]
+    working_dir: /app
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: "${WEB_NODE_ENV:-development}"
+      NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-/api/v1}"
+      API_PROXY_TARGET: "${API_PROXY_TARGET:-http://api:3001}"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - web_node_modules:/app/node_modules
+    command: >
+      sh -lc "test -x node_modules/.bin/next || npm install;
+      npm run dev -- -H 0.0.0.0 -p 3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"const http=require('http');const req=http.get('http://localhost:3000/',res=>process.exit(res.statusCode>=200&&res.statusCode<500?0:1));req.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000);\"",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  comptrol_pgdata:
+    name: comptrol_pgdata
+  api_node_modules:
+    name: comptrol_api_node_modules
+  web_node_modules:
+    name: comptrol_web_node_modules
+  importer_node_modules:
+    name: comptrol_importer_node_modules

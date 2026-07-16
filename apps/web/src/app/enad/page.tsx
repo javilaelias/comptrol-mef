@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 import type { EnadSummary } from '@/features/dashboard/components/EnadSummaryPanel';
@@ -73,14 +74,14 @@ export default function EnadConfigPage() {
         const map = new Map((ma.answers ?? []).map((a) => [a.questionCode, a]));
         setSel10(map.get(10)?.selectedOptionCodes?.[0] ?? '');
         setSel11(map.get(11)?.selectedOptionCodes?.[0] ?? '');
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        if (err?.status === 401) {
+        if (getErrorStatus(err) === 401) {
           clearToken();
           router.push('/login');
           return;
         }
-        setError(String(err?.message ?? err));
+        setError(getErrorMessage(err));
       }
     }
 
@@ -108,13 +109,13 @@ export default function EnadConfigPage() {
       const s = await apiFetch<EnadSummary>('/enad/summary');
       setSummary(s);
       router.push('/dashboard');
-    } catch (err: any) {
-      if (err?.status === 401) {
+    } catch (err: unknown) {
+      if (getErrorStatus(err) === 401) {
         clearToken();
         router.push('/login');
         return;
       }
-      setError(String(err?.message ?? err));
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

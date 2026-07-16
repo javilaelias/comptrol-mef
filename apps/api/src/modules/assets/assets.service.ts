@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AssetSource, AssetType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DiscoveryIngestDto, DiscoverySource } from './dto/discovery-ingest.dto';
+import {
+  DiscoveryIngestDto,
+  DiscoverySource,
+} from './dto/discovery-ingest.dto';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 
@@ -85,7 +88,11 @@ export class AssetsService {
   async getById(tenantId: string, id: string) {
     return this.prisma.asset.findFirst({
       where: { tenantId, id },
-      include: { location: { include: { site: true } }, orgUnit: true, owner: true },
+      include: {
+        location: { include: { site: true } },
+        orgUnit: true,
+        owner: true,
+      },
     });
   }
 
@@ -141,7 +148,12 @@ export class AssetsService {
     });
   }
 
-  async update(tenantId: string, actorUserId: string, id: string, dto: UpdateAssetDto) {
+  async update(
+    tenantId: string,
+    actorUserId: string,
+    id: string,
+    dto: UpdateAssetDto,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.asset.findFirst({ where: { tenantId, id } });
       if (!before) return null;
@@ -215,62 +227,85 @@ export class AssetsService {
     });
   }
 
-  async ingestDiscovery(tenantId: string, actorUserId: string | null, dto: DiscoveryIngestDto) {
+  async ingestDiscovery(
+    tenantId: string,
+    actorUserId: string | null,
+    dto: DiscoveryIngestDto,
+  ) {
     const serial = dto.serialNumber?.trim() || undefined;
     const mac = normalizeMac(dto.macAddress);
     const host = dto.hostname?.trim() || undefined;
     const ip = dto.ipAddress?.trim() || undefined;
-    const fingerprint = serial || mac || `${host ?? 'unknown'}|${ip ?? 'unknown'}`;
+    const fingerprint =
+      serial || mac || `${host ?? 'unknown'}|${ip ?? 'unknown'}`;
 
     const now = new Date();
-    const source = dto.source === DiscoverySource.discovery_passive ? AssetSource.discovery_passive : AssetSource.discovery_active;
+    const source =
+      dto.source === DiscoverySource.discovery_passive
+        ? AssetSource.discovery_passive
+        : AssetSource.discovery_active;
 
     const existing =
       (serial
-        ? await this.prisma.asset.findFirst({ where: { tenantId, serialNumber: serial } })
-        : null) ??
-      (mac ? await this.prisma.asset.findFirst({ where: { tenantId, macAddress: mac } }) : null) ??
-      (host && ip ? await this.prisma.asset.findFirst({ where: { tenantId, hostname: host, ipAddress: ip } }) : null);
-
-    const beforeData = existing ? { id: existing.id, serialNumber: existing.serialNumber, macAddress: existing.macAddress } : null;
-
-    const asset =
-      existing
-        ? await this.prisma.asset.update({
-            where: { id: existing.id },
-            data: {
-              hostname: host ?? existing.hostname,
-              ipAddress: ip ?? existing.ipAddress,
-              macAddress: mac ?? existing.macAddress,
-              serialNumber: serial ?? existing.serialNumber,
-              vendor: dto.vendor?.trim() ?? existing.vendor,
-              model: dto.model?.trim() ?? existing.model,
-              assetType: toAssetType(dto.assetType),
-              source,
-              lastSeenAt: now,
-              fingerprint,
-            },
+        ? await this.prisma.asset.findFirst({
+            where: { tenantId, serialNumber: serial },
           })
-        : await this.prisma.asset.create({
-            data: {
-              tenantId,
-              assetTag: `AUTO-${now.getTime()}`,
-              hostname: host ?? null,
-              ipAddress: ip ?? null,
-              macAddress: mac ?? null,
-              serialNumber: serial ?? null,
-              assetType: toAssetType(dto.assetType),
-              vendor: dto.vendor?.trim() ?? null,
-              model: dto.model?.trim() ?? null,
-              status: 'in_use',
-              criticality: 'medium',
-              purchaseCost: 0,
-              currentBookValue: 0,
-              lastSeenAt: now,
-              source,
-              fingerprint,
-            },
-          });
+        : null) ??
+      (mac
+        ? await this.prisma.asset.findFirst({
+            where: { tenantId, macAddress: mac },
+          })
+        : null) ??
+      (host && ip
+        ? await this.prisma.asset.findFirst({
+            where: { tenantId, hostname: host, ipAddress: ip },
+          })
+        : null);
+
+    const beforeData = existing
+      ? {
+          id: existing.id,
+          serialNumber: existing.serialNumber,
+          macAddress: existing.macAddress,
+        }
+      : null;
+
+    const asset = existing
+      ? await this.prisma.asset.update({
+          where: { id: existing.id },
+          data: {
+            hostname: host ?? existing.hostname,
+            ipAddress: ip ?? existing.ipAddress,
+            macAddress: mac ?? existing.macAddress,
+            serialNumber: serial ?? existing.serialNumber,
+            vendor: dto.vendor?.trim() ?? existing.vendor,
+            model: dto.model?.trim() ?? existing.model,
+            assetType: toAssetType(dto.assetType),
+            source,
+            lastSeenAt: now,
+            fingerprint,
+          },
+        })
+      : await this.prisma.asset.create({
+          data: {
+            tenantId,
+            assetTag: `AUTO-${now.getTime()}`,
+            hostname: host ?? null,
+            ipAddress: ip ?? null,
+            macAddress: mac ?? null,
+            serialNumber: serial ?? null,
+            assetType: toAssetType(dto.assetType),
+            vendor: dto.vendor?.trim() ?? null,
+            model: dto.model?.trim() ?? null,
+            status: 'in_use',
+            criticality: 'medium',
+            purchaseCost: 0,
+            currentBookValue: 0,
+            lastSeenAt: now,
+            source,
+            fingerprint,
+          },
+        });
 
     const audit = await this.prisma.auditLog.create({
       data: {

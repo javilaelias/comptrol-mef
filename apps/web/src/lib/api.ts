@@ -31,7 +31,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (!res.ok) {
     const body = await parseJsonSafe(res);
     const message =
-      (body && typeof body === 'object' && 'message' in body && (body as any).message) ||
+      (body && typeof body === 'object' && 'message' in body && (body as Record<string, unknown>).message) ||
       res.statusText ||
       'Request failed';
     const err: ApiError = { status: res.status, message: String(message) };
@@ -40,4 +40,3 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   return (await res.json()) as T;
 }
-

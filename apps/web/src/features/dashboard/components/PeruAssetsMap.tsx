@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type * as Leaflet from 'leaflet';
 
 export type InventoryBySiteRow = {
   siteId: string | null;
@@ -55,8 +56,9 @@ function inferCoords(siteName: string): LatLng | null {
 
 export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
   const mapEl = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<any>(null);
-  const leafletRef = useRef<any>(null);
+  const mapInstance = useRef<Leaflet.Map | null>(null);
+  const leafletRef = useRef<typeof import('leaflet') | null>(null);
+  const layerRef = useRef<Leaflet.LayerGroup | null>(null);
   const [ready, setReady] = useState(false);
 
   const points = useMemo(() => {
@@ -92,8 +94,7 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
         attribution: '&copy; OpenStreetMap',
       }).addTo(map);
 
-      const layer = L.layerGroup().addTo(map);
-      (map as any)._comptrolLayer = layer;
+      layerRef.current = L.layerGroup().addTo(map);
       setReady(true);
     }
 
@@ -112,10 +113,9 @@ export function PeruAssetsMap({ rows }: { rows: InventoryBySiteRow[] }) {
     if (!ready) return;
     if (!mapInstance.current) return;
 
-    const map = mapInstance.current;
     const L = leafletRef.current;
     if (!L) return;
-    const layer = (map as any)._comptrolLayer;
+    const layer = layerRef.current;
     if (!layer) return;
     layer.clearLayers();
 

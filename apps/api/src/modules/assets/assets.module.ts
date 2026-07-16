@@ -7,4 +7,3 @@ import { AssetsService } from './assets.service';
   providers: [AssetsService],
 })
 export class AssetsModule {}
-

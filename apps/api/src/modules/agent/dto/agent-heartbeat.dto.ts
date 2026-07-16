@@ -1,9 +1,10 @@
 import { IsIP, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class AgentHeartbeatDto {
+  @IsOptional()
   @IsString()
   @MaxLength(80)
-  assetTag!: string;
+  assetTag?: string;
 
   @IsOptional()
   @IsString()
@@ -39,4 +40,3 @@ export class AgentHeartbeatDto {
   @MaxLength(120)
   model?: string;
 }
-

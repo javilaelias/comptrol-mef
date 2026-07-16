@@ -1,4 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { JwtUserPayload } from '../auth/jwt.strategy';
@@ -18,7 +31,11 @@ export class ApplicationsController {
     @Query('take', new ParseIntPipe({ optional: true })) take = 50,
     @Query('skip', new ParseIntPipe({ optional: true })) skip = 0,
   ) {
-    return this.applications.list(user.tenantId, { search, take: Math.max(1, Math.min(take, 200)), skip: Math.max(0, skip) });
+    return this.applications.list(user.tenantId, {
+      search,
+      take: Math.max(1, Math.min(take, 200)),
+      skip: Math.max(0, skip),
+    });
   }
 
   @Get(':id')
@@ -28,12 +45,19 @@ export class ApplicationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@CurrentUser() user: JwtUserPayload, @Body() dto: CreateApplicationDto) {
+  async create(
+    @CurrentUser() user: JwtUserPayload,
+    @Body() dto: CreateApplicationDto,
+  ) {
     return this.applications.create(user.tenantId, user.sub, dto);
   }
 
   @Patch(':id')
-  async update(@CurrentUser() user: JwtUserPayload, @Param('id') id: string, @Body() dto: UpdateApplicationDto) {
+  async update(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateApplicationDto,
+  ) {
     return this.applications.update(user.tenantId, user.sub, id, dto);
   }
 
@@ -42,4 +66,3 @@ export class ApplicationsController {
     return this.applications.remove(user.tenantId, user.sub, id);
   }
 }
-

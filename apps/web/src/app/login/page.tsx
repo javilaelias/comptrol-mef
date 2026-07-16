@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { API_BASE_URL } from '@/lib/config';
 import { getToken, setToken } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,8 +28,8 @@ export default function LoginPage() {
 
       setToken(body.accessToken);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(String(err?.message ?? err));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -85,4 +86,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

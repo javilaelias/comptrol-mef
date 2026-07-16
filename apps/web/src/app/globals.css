@@ -8,6 +8,12 @@
   --brand-weak: #ffe5e8;
   --surface: #ffffff;
   --border: #e5e7eb;
+
+  /* Font fallbacks (avoid build-time Google Fonts fetch in restricted networks). */
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {

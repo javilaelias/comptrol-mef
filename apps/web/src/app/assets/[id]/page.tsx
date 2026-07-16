@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { clearToken } from '@/lib/auth';
+import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 
@@ -70,13 +71,13 @@ export default function AssetDetailPage() {
           acquisitionYear: a.acquisitionYear ? String(a.acquisitionYear) : '',
           orgUnitId: a.orgUnitId ?? '',
         });
-      } catch (err: any) {
-        if (err?.status === 401) {
+      } catch (err: unknown) {
+        if (getErrorStatus(err) === 401) {
           clearToken();
           router.push('/login');
           return;
         }
-        setError(String(err?.message ?? err));
+        setError(getErrorMessage(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -195,8 +196,8 @@ export default function AssetDetailPage() {
                       }),
                     });
                     router.push('/assets');
-                  } catch (err: any) {
-                    setError(String(err?.message ?? err));
+                  } catch (err: unknown) {
+                    setError(getErrorMessage(err));
                   } finally {
                     setSaving(false);
                   }

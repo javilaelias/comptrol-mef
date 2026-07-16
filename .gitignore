@@ -20,6 +20,7 @@ apps/web/public/agent/*.exe
 **/.env
 **/.env.local
 **/.env.*.local
+**/.env.docker
 
 # prisma
 apps/api/prisma/dev.db
@@ -29,3 +30,25 @@ docs/*.xlsx
 docs/*.xls
 docs/*.pdf
 !docs/xampp/
+
+# dumps de base de datos y empaquetados de codigo
+*.dump
+/artifacts/
+
+# archivos vacios accidentales generados por comptrol.bat en Bash/Git Bash
+/up
+/down
+/install
+/setup
+/dev
+/import
+/levanta
+/baja
+/recrea
+/reset
+/show
+/logs
+/API
+/Mobile
+/Web
+/prisma

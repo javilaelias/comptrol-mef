@@ -89,6 +89,7 @@ model Tenant {
   orgUnits  OrgUnit[]
   users     User[]
   assets    Asset[]
+  softwareInstallations SoftwareInstallation[]
   applications Application[]
   licenseHoldings LicenseHolding[]
   licenses  SoftwareLicense[]
@@ -198,6 +199,12 @@ model Asset {
   vendor            String?          @db.VarChar(80)
   model             String?          @db.VarChar(120)
   operatingSystem   String?          @map("operating_system") @db.VarChar(120)
+  osVersion         String?          @map("os_version") @db.VarChar(120)
+  cpuModel          String?          @map("cpu_model") @db.VarChar(200)
+  cpuCores          Int?             @map("cpu_cores")
+  cpuLogical        Int?             @map("cpu_logical")
+  ramMb             Int?             @map("ram_mb")
+  storageGb         Int?             @map("storage_gb")
   status            AssetStatus      @default(in_use)
   conditionLabel    String?          @map("condition_label") @db.VarChar(40)
   criticality       AssetCriticality @default(medium)
@@ -211,6 +218,7 @@ model Asset {
   purchaseCost      Decimal          @default(0) @map("purchase_cost") @db.Decimal(14, 2)
   currentBookValue  Decimal          @default(0) @map("current_book_value") @db.Decimal(14, 2)
   lastSeenAt        DateTime?        @map("last_seen_at") @db.Timestamptz(6)
+  lastInventoryAt   DateTime?        @map("last_inventory_at") @db.Timestamptz(6)
   source            AssetSource      @default(manual)
   fingerprint       String?          @db.VarChar(200)
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -220,17 +228,36 @@ model Asset {
   owner    User?    @relation("AssetOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   orgUnit  OrgUnit? @relation(fields: [orgUnitId], references: [id], onDelete: SetNull)
+  softwareInstallations SoftwareInstallation[]
 
   @@unique([tenantId, assetTag])
   @@unique([tenantId, serialNumber])
   @@index([tenantId, status])
   @@index([tenantId, lastSeenAt(sort: Desc)])
+  @@index([tenantId, lastInventoryAt(sort: Desc)])
   @@index([tenantId, ownerUserId])
   @@index([tenantId, macAddress])
   @@index([tenantId, ipAddress])
   @@index([tenantId, inventoryCode])
   @@index([tenantId, orgUnitId])
   @@map("assets")
+}
+
+model SoftwareInstallation {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  assetId    String   @map("asset_id") @db.Uuid
+  name       String   @db.VarChar(240)
+  version    String?  @db.VarChar(120)
+  publisher  String?  @db.VarChar(200)
+  detectedAt DateTime @map("detected_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset  Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, assetId])
+  @@index([tenantId, name])
+  @@map("software_installations")
 }
 
 model Application {

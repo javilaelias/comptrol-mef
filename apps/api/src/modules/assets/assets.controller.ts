@@ -46,7 +46,10 @@ export class AssetsController {
   }
 
   @Get('by-tag/:assetTag')
-  async getByTag(@CurrentUser() user: JwtUserPayload, @Param('assetTag') assetTag: string) {
+  async getByTag(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('assetTag') assetTag: string,
+  ) {
     return this.assets.getByAssetTag(user.tenantId, assetTag);
   }
 
@@ -57,12 +60,19 @@ export class AssetsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@CurrentUser() user: JwtUserPayload, @Body() dto: CreateAssetDto) {
+  async create(
+    @CurrentUser() user: JwtUserPayload,
+    @Body() dto: CreateAssetDto,
+  ) {
     return this.assets.create(user.tenantId, user.sub, dto);
   }
 
   @Patch(':id')
-  async update(@CurrentUser() user: JwtUserPayload, @Param('id') id: string, @Body() dto: UpdateAssetDto) {
+  async update(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateAssetDto,
+  ) {
     return this.assets.update(user.tenantId, user.sub, id, dto);
   }
 
@@ -73,8 +83,15 @@ export class AssetsController {
 
   @Post('discovery')
   @HttpCode(HttpStatus.CREATED)
-  async ingestDiscovery(@CurrentUser() user: JwtUserPayload, @Body() dto: DiscoveryIngestDto) {
-    const result = await this.assets.ingestDiscovery(user.tenantId, user.sub, dto);
+  async ingestDiscovery(
+    @CurrentUser() user: JwtUserPayload,
+    @Body() dto: DiscoveryIngestDto,
+  ) {
+    const result = await this.assets.ingestDiscovery(
+      user.tenantId,
+      user.sub,
+      dto,
+    );
     return {
       success: true,
       message: 'Asset discovery ingested successfully',

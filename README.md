@@ -6,13 +6,36 @@ MVP ejecutable hoy para presentación:
 - Móvil (Expo) con login + escaneo QR + consulta por Asset Tag
 
 ## Requisitos
-- Node.js (ya instalado)
-- PostgreSQL 15 con BD `comptrol` (vacía)
+- Docker Desktop (recomendado para desarrollo)
+- Alternativa local: Node.js + PostgreSQL 15 con BD `comptrol` (vacía)
+
+## Ejecutar (Docker recomendado)
+Esto estandariza PostgreSQL/API/Web para desarrollo/QA y evita depender de Node instalado en tu PC.
+
+Windows (1 comando):
+```bat
+comptrol.bat
+comptrol.bat up
+```
+
+Manual (cualquier SO):
+```bash
+cp apps/api/.env.docker.example apps/api/.env.docker
+docker compose up -d db
+docker compose --profile app run --rm api sh -lc "test -d node_modules || npm ci; npx prisma generate; npx prisma migrate deploy; npm run seed"
+docker compose --profile app up
+```
+
+Linux remoto por SSH:
+- Ver `docs/LINUX_DEPLOY.md`
+- La web queda accesible desde otra maquina por `http://IP_DEL_SERVIDOR:3000`
+- El navegador ya no necesita llamar directo al puerto `3001`; la web proxyea `/api/v1` internamente
 
 ## Base de datos
 La API usa Prisma Migrate.
 
-- Conexión: `apps/api/.env` (`DATABASE_URL`)
+- Conexión (local): `apps/api/.env` (`DATABASE_URL`)
+- Conexión (Docker): `apps/api/.env.docker` (`DATABASE_URL`)
 - Migraciones: `apps/api/prisma/migrations/*`
 - Semilla: `apps/api/prisma/seed.ts` (demo)
 
@@ -28,7 +51,21 @@ Archivos detectados:
 - `docs/Relacion de Licencias y aplicativos MEF - 31 dic 2025.xls` (licencias + aplicaciones)
 - `docs/Encuesta ENAD 2025[R].pdf` (ENAD)
 
-Importa equipos + licencias + aplicaciones:
+Importa equipos + licencias + aplicaciones (Excel) como job offline:
+
+Docker (recomendado):
+```bat
+comptrol.bat job docs
+comptrol.bat job docs reset
+```
+
+Manual (Docker):
+```bash
+docker compose --profile jobs run --rm import-docs
+docker compose --profile jobs run --rm -e IMPORT_RESET=1 import-docs
+```
+
+Local (Node + PostgreSQL local):
 ```bash
 npm run import:docs
 ```
@@ -89,6 +126,11 @@ Puertos:
 
 ## Agente (.exe)
 Ver `apps/agent-exe/README.md` para compilar el agente Windows que reporta “heartbeat” al API (`/api/v1/agent/heartbeat`).
+
+## Operación (institucional)
+- Lineamientos operativos: `docs/OPERATIONS.md`
+- Runbook (N1/N2): `docs/RUNBOOK.md`
+- Continuidad/Backups (DR): `docs/DR_BACKUP.md`
 
 ## XAMPP (Apache reverse proxy)
 Ver `docs/xampp/apache-reverse-proxy.conf` para el snippet de configuración.
