@@ -325,7 +325,7 @@ echo [INFO] Levantando PostgreSQL (Docker)...
 docker compose up -d db || exit /b 1
 call :wait_db_ready || exit /b 1
 echo [INFO] Migraciones + seed (Docker)...
-docker compose --profile app run --rm api sh -lc "test -x node_modules/.bin/nest || npm ci; npx prisma generate; npx prisma migrate deploy; npm run seed" || exit /b 1
+docker compose --profile app run --rm api sh -lc "test -x node_modules/.bin/nest || npm ci; npx prisma generate; npx prisma migrate deploy; npm run db:seed" || exit /b 1
 exit /b %errorlevel%
 
 :up

@@ -8,7 +8,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: comptrol
     ports:
-      - "5432:5432"
+      # 5432 del host suele estar tomado (PostgreSQL nativo / otros stacks).
+      # La API habla con db:5432 por la red interna; esto es solo acceso desde el host.
+      - "${DB_HOST_PORT:-5436}:5432"
     volumes:
       - comptrol_pgdata:/var/lib/postgresql/data
     healthcheck:

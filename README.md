@@ -22,9 +22,12 @@ Manual (cualquier SO):
 ```bash
 cp apps/api/.env.docker.example apps/api/.env.docker
 docker compose up -d db
-docker compose --profile app run --rm api sh -lc "test -d node_modules || npm ci; npx prisma generate; npx prisma migrate deploy; npm run seed"
+docker compose --profile app run --rm api sh -lc "test -d node_modules || npm ci; npx prisma generate; npx prisma migrate deploy; npm run db:seed"
 docker compose --profile app up
 ```
+
+Sugerencia: usa `comptrol.bat up -d` (detached) para no dejar el stack atado a la terminal.
+Los logs se consultan aparte con `docker compose logs -f api`.
 
 Linux remoto por SSH:
 - Ver `docs/LINUX_DEPLOY.md`
@@ -36,6 +39,10 @@ La API usa Prisma Migrate.
 
 - Conexión (local): `apps/api/.env` (`DATABASE_URL`)
 - Conexión (Docker): `apps/api/.env.docker` (`DATABASE_URL`)
+- Puerto publicado en el host: **`5436`** (no 5432, que suele estar tomado por un PostgreSQL
+  nativo u otro stack). Dentro de compose la API sigue hablando con `db:5432`.
+  Para cambiarlo: `DB_HOST_PORT=5437 docker compose up -d db`.
+- Cliente externo (DBeaver/pgAdmin): `localhost:5436`, usuario/password `postgres`, BD `comptrol`
 - Migraciones: `apps/api/prisma/migrations/*`
 - Semilla: `apps/api/prisma/seed.ts` (demo)
 
@@ -96,11 +103,14 @@ npm run dev
 ```
 
 Puertos:
-- Web: `http://localhost:3000`
-- API: `http://localhost:3001/api/v1`
+- Web: `http://localhost:3000` (redirige a `/login`)
+- API: `http://localhost:3001/api/v1` (health: `/api/v1/health/ready`)
+- PostgreSQL (Docker): `localhost:5436`
 
 ## Credenciales demo
-- `admin@mef.gob.pe` / `Admin123!`
+- `admin@mef.gob.pe` / `Admin123!` (super admin)
+- `itadmin@mef.gob.pe` / `ItAdmin123!` (IT admin)
+- `asset.manager@mef.gob.pe` / `Assets123!` (gestor de activos)
 
 ## Endpoints principales
 - `POST /api/v1/auth/login`
@@ -126,6 +136,33 @@ Puertos:
 
 ## Agente (.exe)
 Ver `apps/agent-exe/README.md` para compilar el agente Windows que reporta “heartbeat” al API (`/api/v1/agent/heartbeat`).
+
+## Problemas frecuentes
+
+**`Bind for 0.0.0.0:5432 failed: port is already allocated`**
+Otro PostgreSQL (servicio nativo de Windows u otro stack Docker) ocupa el 5432.
+Por eso este proyecto publica la BD en `5436`. Si también estuviera ocupado,
+levanta con otro puerto: `DB_HOST_PORT=5437 docker compose up -d db`.
+Para ver quién lo tiene: `docker ps --format "{{.Names}} {{.Ports}}"`.
+
+**`comptrol-api exited with code 137` / `Killed`**
+Es el OOM killer: la VM de WSL2 se quedó sin memoria (no es un fallo de la app).
+Ocurre en sesiones largas porque API y Web corren en modo watch con polling.
+Revisa el techo con `docker info --format "{{.MemTotal}}"`; si es 4 GB o menos,
+súbelo en `%USERPROFILE%\.wslconfig`:
+```ini
+[wsl2]
+memory=8GB
+```
+Requiere `wsl --shutdown` (detiene TODOS los contenedores de la máquina, no solo los de este proyecto).
+Confirmar la causa después de una caída: `docker inspect comptrol-api --format "{{.State.OOMKilled}}"`.
+No hace falta re-ejecutar el setup: las migraciones y el seed persisten en el volumen
+`comptrol_pgdata`; basta `docker compose --profile app up -d api web`.
+
+**El lockfile de web aparece modificado sin haberlo tocado**
+El contenedor `web` corre `npm install` si faltan dependencias, y al hacerlo en Linux
+elimina los metadatos `libc` de `apps/web/package-lock.json`. Descarta ese cambio:
+`git checkout -- apps/web/package-lock.json`.
 
 ## Operación (institucional)
 - Lineamientos operativos: `docs/OPERATIONS.md`
