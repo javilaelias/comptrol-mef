@@ -23,6 +23,9 @@ const API_BASE_KEY = 'comptrol_api_base';
 const DEFAULT_API_BASE =
   process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ?? 'http://localhost:3001/api/v1';
 
+const DEFAULT_EMAIL = process.env.EXPO_PUBLIC_AUTO_LOGIN_EMAIL ?? 'admin@mef.gob.pe';
+const DEFAULT_PASSWORD = process.env.EXPO_PUBLIC_AUTO_LOGIN_PASSWORD ?? 'Admin123!';
+
 async function apiFetch<T>(apiBaseUrl: string, path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
   const res = await fetch(`${apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`, {
     ...init,
@@ -51,8 +54,23 @@ export default function App() {
         AsyncStorage.getItem(TOKEN_KEY),
         AsyncStorage.getItem(API_BASE_KEY),
       ]);
+      const base = savedApi ?? apiBaseUrl;
       if (savedApi) setApiBaseUrl(savedApi);
-      if (savedToken) setToken(savedToken);
+      if (savedToken) {
+        setToken(savedToken);
+      } else {
+        // Sin sesión previa: entra automáticamente (la app vive dentro de gti-app, sin login propio)
+        try {
+          const res = await apiFetch<AuthResponse>(base, '/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email: DEFAULT_EMAIL, password: DEFAULT_PASSWORD }),
+          });
+          await AsyncStorage.setItem(TOKEN_KEY, res.accessToken);
+          setToken(res.accessToken);
+        } catch {
+          // Si falla, se deja el login manual como respaldo
+        }
+      }
       setLoading(false);
     })();
   }, []);

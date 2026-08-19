@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from './auth';
+import { ensureSession } from './auth';
 
 export function useRequireAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) router.push('/login');
+    let cancelled = false;
+    ensureSession().then((ok) => {
+      if (!cancelled && !ok) router.push('/login');
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 }
 

@@ -2,11 +2,9 @@
 
 import Link from 'next/link';
 import React from 'react';
-import { clearToken } from '@/lib/auth';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 export function TopNav({ title }: { title?: string }) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const navItem = (href: string, label: string) => {
@@ -48,15 +46,6 @@ export function TopNav({ title }: { title?: string }) {
           {navItem('/applications', 'Apps')}
           {navItem('/sites', 'Sedes')}
           {navItem('/enad', 'ENAD')}
-          <button
-            className="rounded-xl border border-[color:var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-black hover:border-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-weak)]"
-            onClick={() => {
-              clearToken();
-              router.push('/login');
-            }}
-          >
-            Salir
-          </button>
         </nav>
       </div>
     </header>
