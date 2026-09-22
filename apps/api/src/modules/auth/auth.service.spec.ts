@@ -124,6 +124,18 @@ describe('AuthService.loginWithSsoTicket', () => {
     await expect(service.loginWithSsoTicket(ticket)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('rechaza con 401 y sin filtrar el nombre de la env var cuando GTI_SSO_SECRET no está seteado', async () => {
+    config.get.mockReturnValue(undefined);
+    const ticket = signTicket();
+
+    const caught = await service.loginWithSsoTicket(ticket).catch((err) => err);
+
+    expect(caught).toBeInstanceOf(UnauthorizedException);
+    expect(caught.message).toBe('invalid_ticket');
+    expect(caught.message).not.toMatch(/GTI_SSO_SECRET/i);
+    expect(prisma.tenant.findFirst).not.toHaveBeenCalled();
+  });
+
   it('rechaza con 403 cuando el usuario existe pero su status no es active', async () => {
     prisma.tenant.findFirst.mockResolvedValue({ id: TENANT_ID, slug: 'mef' });
     prisma.user.findFirst.mockResolvedValue({

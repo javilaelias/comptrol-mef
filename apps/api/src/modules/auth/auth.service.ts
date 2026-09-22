@@ -79,7 +79,12 @@ export class AuthService {
    * que colisionaría con el ya registrado para JWT_SECRET.
    */
   async loginWithSsoTicket(ticket: string) {
-    const ticketSecret = this.config.get<string>('GTI_SSO_SECRET') ?? 'change-me-in-prod';
+    const ticketSecret = this.config.get<string>('GTI_SSO_SECRET');
+    if (!ticketSecret) {
+      // eslint-disable-next-line no-console
+      console.error('GTI_SSO_SECRET no configurado: no se puede verificar el ticket SSO.');
+      throw new UnauthorizedException('invalid_ticket');
+    }
     const ticketJwt = new JwtService({ secret: ticketSecret });
 
     let payload: SsoTicketPayload;
