@@ -1,12 +1,12 @@
 {
   "version": 1,
   "nombre": "Comptrol-MEF",
-  "descripcion": "Comptrol-MEF (ITAM/CMDB) demo",
+  "descripcion": "Comptrol-MEF (ITAM/CMDB) - datos reales de MEF",
   "ambito": "institucional",
   "maquina_duena": "AIO-1090",
   "replicar": false,
   "origen_mef": true,
   "clonado": true,
   "clon_de": null,
-  "actualizado": "2026-08-24T15:53:59.841Z"
+  "actualizado": "2026-09-22T20:10:00.000Z"
 }
