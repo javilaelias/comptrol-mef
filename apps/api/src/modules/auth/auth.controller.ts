@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
+import { SsoTicketDto } from './dto/sso-ticket.dto';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -9,5 +10,10 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto) {
     return this.auth.login(dto.email, dto.password);
+  }
+
+  @Post('sso')
+  async sso(@Body() dto: SsoTicketDto) {
+    return this.auth.loginWithSsoTicket(dto.ticket);
   }
 }

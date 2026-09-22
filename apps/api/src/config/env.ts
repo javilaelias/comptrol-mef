@@ -7,6 +7,7 @@ const envSchema = z
 
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().min(16),
+    GTI_SSO_SECRET: z.string().min(16).optional(),
 
     CORS_ORIGINS: z.string().optional(),
 
