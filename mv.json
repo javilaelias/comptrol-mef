@@ -1,12 +1,15 @@
 {
-  "version": 1,
-  "nombre": "Comptrol-MEF",
-  "descripcion": "Comptrol-MEF (ITAM/CMDB) - datos reales de MEF",
-  "ambito": "institucional",
-  "maquina_duena": "AIO-1090",
-  "replicar": false,
-  "origen_mef": true,
-  "clonado": true,
-  "clon_de": null,
-  "actualizado": "2026-09-22T20:10:00.000Z"
+    "version":  1,
+    "nombre":  "Comptrol-MEF",
+    "descripcion":  "ITAM/CMDB del MEF, integrado al portal OPDA Apps con SSO real (ticket firmado) y rol dedicado ROLE_COMPTROL",
+    "ambito":  "institucional",
+    "maquina_duena":  "AIO-1090",
+    "replicar":  false,
+    "origen_mef":  true,
+    "clonado":  true,
+    "clon_de":  null,
+    "actualizado":  "2026-09-22T20:19:32.9060272Z",
+    "fabrica":  "JuvinFactory",
+    "estado_desarrollo":  "v1_0",
+    "despliegue":  "institucional"
 }
