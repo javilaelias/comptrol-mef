@@ -8,6 +8,7 @@ import { clearToken } from '@/lib/auth';
 import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
+import { isSigaImported } from '@/lib/assetOrigin';
 
 type Asset = {
   id: string;
@@ -23,6 +24,7 @@ type Asset = {
   acquisitionYear: number | null;
   orgUnitId: string | null;
   orgUnit?: { id: string; name: string } | null;
+  fingerprint: string | null;
 };
 
 type OrgUnit = { id: string; name: string };
@@ -101,7 +103,17 @@ export default function AssetDetailPage() {
 
         {asset && (
           <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h1 className="text-base font-semibold text-slate-900">Editar activo</h1>
+            <h1 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              Editar activo
+              {isSigaImported(asset.fingerprint) && (
+                <span
+                  className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800"
+                  title="Este activo viene de la importación del patrimonio de SIGA"
+                >
+                  Importado de SIGA
+                </span>
+              )}
+            </h1>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="block">

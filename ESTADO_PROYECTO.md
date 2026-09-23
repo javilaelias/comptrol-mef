@@ -11,6 +11,7 @@ despliegue: `docker-compose.server.yml` (producción, `/home/usr_admin/apps/Comp
 |---|---|---|
 | SSO real + rol dedicado (`ROLE_COMPTROL`) | ✅ Cerrado 2026-09-22 | Ver `registro/gti-app.md` de JuvinFactory — implementado en el repo de `gti-app`, no en este |
 | Carga del patrimonio de SIGA a staging | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/cargar-patrimonio-siga-staging/` |
+| Columnas configurables + origen SIGA en Activos | 🟡 Implementado, falta verificación visual | `openspec/changes/activos-columnas-configurables-origen-siga/` (sin archivar todavía) |
 
 ## Carga de SIGA (2026-09-23)
 
@@ -47,9 +48,32 @@ arriba por partir de una base con contenido distinto, no por un error.
   `design.md` del cambio archivado) para no repetir este mini-bloque de infraestructura en el
   próximo re-sync de SIGA.
 
-## Pendiente (próximo mini-bloque, pedido directo del usuario)
+## Columnas configurables + origen SIGA en Activos (2026-09-23, implementado, no archivado)
 
-UI de la lista de activos: (1) indicar visualmente que el dato viene de SIGA, (2) columnas
-configurables (visibles/ocultas) con scroll horizontal para las ocultas. Sin propuesta OpenSpec
-todavía — pasa por su propio concilio antes de codificar, no se mezcla con el cambio de carga de
-datos ya cerrado.
+Pedido directo del usuario tras ver los datos de SIGA cargados: (1) indicador de origen SIGA en
+la lista y el detalle de cada activo, (2) selector de columnas visibles (de ~30 campos posibles,
+antes solo 6 fijos) con scroll horizontal para las que no entran en pantalla.
+
+Propuesta OpenSpec + concilio (2 revisores + los dos sub-veredictos de arquitectura explícitos,
+APROBADO CON CAMBIOS) — dos correcciones reales encontradas antes de codificar:
+- **Seguridad:** el diseño original pedía `include: { owner: true }` en el listado de activos —
+  eso habría filtrado `passwordHash` en la respuesta HTTP (`assets.controller.ts` no tiene
+  ningún sanitizado/interceptor). Corregido a `select` explícito
+  (`id`/`fullName`/`email`), verificado con una consulta real contra la base local que confirma
+  que `passwordHash` no viaja. **El mismo problema ya existe hoy en `getById`/`getByAssetTag`
+  (detalle de un activo) — deuda de seguridad real, no corregida en este cambio, pendiente como
+  ítem propio.**
+- **Simplicidad:** se descartó `@tanstack/react-table` (propuesta original) — el pedido no
+  necesita sorting/filtering/virtualización, solo toggle de visibilidad. Implementado con
+  `useState<Record<string, boolean>>`, mismo patrón que ya usaba el archivo, sin dependencias
+  nuevas.
+
+**Implementado:** `apps/web/src/app/assets/columns.tsx` (30 columnas en 6 grupos), `apps/web/src/
+lib/assetOrigin.ts` (`isSigaImported`, por `fingerprint`, no por `source` — más preciso, ver
+`design.md`), tabla y selector en `page.tsx`, badge en `[id]/page.tsx`, `owner` agregado al
+listado del backend. `tsc --noEmit` y `next build` limpios.
+
+**Pendiente, no cubierto por esta sesión:** verificación visual en navegador real (esta sesión no
+tiene acceso a un navegador interactivo) — falta confirmar que el selector, el scroll horizontal
+y el badge se ven y funcionan como se espera. **El cambio OpenSpec sigue abierto (no archivado)
+hasta esa confirmación.**

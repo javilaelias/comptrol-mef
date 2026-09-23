@@ -77,7 +77,11 @@ export class AssetsService {
         take,
         skip,
         orderBy: { updatedAt: 'desc' },
-        include: { location: { include: { site: true } }, orgUnit: true },
+        include: {
+          location: { include: { site: true } },
+          orgUnit: true,
+          owner: { select: { id: true, fullName: true, email: true } },
+        },
       }),
       this.prisma.asset.count({ where }),
     ]);

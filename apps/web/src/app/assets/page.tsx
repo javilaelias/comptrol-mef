@@ -8,17 +8,14 @@ import { clearToken } from '@/lib/auth';
 import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
-
-type AssetListItem = {
-  id: string;
-  assetTag: string;
-  description: string | null;
-  assetType: string;
-  status: string;
-  updatedAt: string;
-  location?: { name: string; site?: { name: string } | null } | null;
-  orgUnit?: { name: string } | null;
-};
+import { isSigaImported } from '@/lib/assetOrigin';
+import {
+  ASSET_COLUMNS,
+  COLUMN_GROUPS,
+  loadColumnVisibility,
+  saveColumnVisibility,
+  type AssetListItem,
+} from './columns';
 
 type AssetListResponse = {
   items: AssetListItem[];
@@ -52,6 +49,26 @@ export default function AssetsPage() {
   const [createDescription, setCreateDescription] = useState('');
   const [createType, setCreateType] = useState<(typeof ASSET_TYPES)[number]>('desktop');
   const [creating, setCreating] = useState(false);
+
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+
+  useEffect(() => {
+    setColumnVisibility(loadColumnVisibility());
+  }, []);
+
+  function toggleColumn(key: string) {
+    setColumnVisibility((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      saveColumnVisibility(next);
+      return next;
+    });
+  }
+
+  const visibleColumns = useMemo(
+    () => ASSET_COLUMNS.filter((c) => columnVisibility[c.key]),
+    [columnVisibility],
+  );
 
   const page = useMemo(() => {
     if (!data) return 0;
@@ -171,6 +188,33 @@ export default function AssetsPage() {
             >
               Buscar
             </button>
+            <div className="relative">
+              <button
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                onClick={() => setColumnPickerOpen((v) => !v)}
+              >
+                Columnas ({visibleColumns.length}/{ASSET_COLUMNS.length})
+              </button>
+              {columnPickerOpen && (
+                <div className="absolute right-0 z-10 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                  {COLUMN_GROUPS.map((group) => (
+                    <div key={group} className="mb-3 last:mb-0">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{group}</p>
+                      {ASSET_COLUMNS.filter((c) => c.group === group).map((c) => (
+                        <label key={c.key} className="flex items-center gap-2 py-1 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(columnVisibility[c.key])}
+                            onChange={() => toggleColumn(c.key)}
+                          />
+                          {c.label}
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {error && <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
@@ -187,27 +231,34 @@ export default function AssetsPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="text-slate-600">
                     <tr className="border-b">
-                      <th className="py-2 pr-3 font-medium">Asset Tag</th>
-                      <th className="py-2 pr-3 font-medium">Descripción</th>
-                      <th className="py-2 pr-3 font-medium">Tipo</th>
-                      <th className="py-2 pr-3 font-medium">Estado</th>
-                      <th className="py-2 pr-3 font-medium">Sede / Ubicación</th>
-                      <th className="py-2 pr-3 font-medium">Dependencia</th>
-                      <th className="py-2 pr-3 font-medium">Acciones</th>
+                      {visibleColumns.map((c) => (
+                        <th key={c.key} className="whitespace-nowrap py-2 pr-3 font-medium">
+                          {c.label}
+                        </th>
+                      ))}
+                      <th className="whitespace-nowrap py-2 pr-3 font-medium">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.items.map((a) => (
                       <tr key={a.id} className="border-b last:border-0">
-                        <td className="py-2 pr-3 font-medium text-slate-900">{a.assetTag}</td>
-                        <td className="py-2 pr-3 text-slate-700">{a.description ?? '—'}</td>
-                        <td className="py-2 pr-3 text-slate-700">{a.assetType}</td>
-                        <td className="py-2 pr-3 text-slate-700">{a.status}</td>
-                        <td className="py-2 pr-3 text-slate-700">
-                          {(a.location?.site?.name ?? 'Sin sede') + ' / ' + (a.location?.name ?? 'Sin ubicación')}
-                        </td>
-                        <td className="py-2 pr-3 text-slate-700">{a.orgUnit?.name ?? '—'}</td>
-                        <td className="py-2 pr-3 text-slate-700">
+                        {visibleColumns.map((c, idx) => (
+                          <td
+                            key={c.key}
+                            className={`whitespace-nowrap py-2 pr-3 text-slate-700 ${idx === 0 ? 'font-medium text-slate-900' : ''}`}
+                          >
+                            {idx === 0 && isSigaImported(a.fingerprint) && (
+                              <span
+                                className="mr-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800"
+                                title="Este activo viene de la importación del patrimonio de SIGA"
+                              >
+                                SIGA
+                              </span>
+                            )}
+                            {c.render(a)}
+                          </td>
+                        ))}
+                        <td className="whitespace-nowrap py-2 pr-3 text-slate-700">
                           <div className="flex items-center gap-2">
                             <Link className="underline" href={`/assets/${a.id}`}>
                               Ver/Editar
