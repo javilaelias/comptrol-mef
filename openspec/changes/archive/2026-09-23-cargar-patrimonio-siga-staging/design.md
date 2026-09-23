@@ -22,6 +22,10 @@ Verificado contra el servidor real (SSH de solo lectura, `10.118.67.55`), no asu
   pesa **5.9 GB**. De referencia: el respaldo a Drive de este mismo cierre (1.55 GB) tardó más
   de una hora por la red institucional — mover 5.9 GB al servidor es horas, no minutos.
   **Conclusión: no vale la pena mover el dato fuente. Es mucho más barato mover la conexión.**
+- **Ejecución real:** el puerto `5436` (propuesto originalmente) ya estaba tomado en el servidor
+  por `rofagente-db` (otro proyecto, mismo servidor compartido) — `docker compose up` falló con
+  "port is already allocated". Se usó `5437` en su lugar, verificado libre por `ss -tlnp` antes
+  de aplicar. Todas las referencias de este documento ya reflejan `5437`, el puerto real.
 
 ## Goals / Non-Goals
 
@@ -44,7 +48,7 @@ un bloque `ports:` **nuevo** al servicio `db` de `docker-compose.server.yml` (el
 producción), atado explícitamente a **loopback del servidor**:
 ```yaml
 ports:
-  - "127.0.0.1:5436:5432"
+  - "127.0.0.1:5437:5432"
 ```
 Nunca sin el prefijo `127.0.0.1:` — el formato sin prefijo (el que tenía por error el
 `docker-compose.yml` de desarrollo) publica en todas las interfaces por defecto, no solo
@@ -59,8 +63,8 @@ sin `-f` fallaría o, peor, se ejecutaría desde el directorio equivocado). Mism
 perdido. El servicio `db` en sí es simple (imagen oficial, env fijo, volumen nombrado,
 healthcheck) — bajo riesgo de que el override cambiara algo crítico específico de ese servicio.
 
-Desde la máquina local: `ssh -L 5436:127.0.0.1:5436 usr_admin@10.118.67.55` (mismo usuario/llave
-ya usados en el bloque SSO), y `DATABASE_URL=postgresql://postgres:postgres@localhost:5436/
+Desde la máquina local: `ssh -L 5437:127.0.0.1:5437 usr_admin@10.118.67.55` (mismo usuario/llave
+ya usados en el bloque SSO), y `DATABASE_URL=postgresql://postgres:postgres@localhost:5437/
 comptrol` para el import. `SIGA_DATABASE_URL` se queda apuntando a la base local — el dato fuente
 nunca se mueve, solo cruzan el túnel los ~34 mil upserts resultantes (KB, no GB).
 
@@ -112,13 +116,13 @@ JIT-provisionado con role: employee"). El importador usa el mismo `TENANT_SLUG =
 ## Migration Plan
 
 1. Confirmar con el usuario el momento de recrear `db` (interrupción breve).
-2. Editar `docker-compose.server.yml` (agregar `ports: ["127.0.0.1:5436:5432"]` al servicio
+2. Editar `docker-compose.server.yml` (agregar `ports: ["127.0.0.1:5437:5432"]` al servicio
    `db`), commitear, sincronizar al servidor (patrón `git archive` de MB1).
 3. En el servidor: `docker compose -f docker-compose.server.yml up -d --force-recreate db` (con
    `-f` explícito siempre). Verificar `healthy`.
 4. Verificar que `comptrol-api` se recuperó: `GET http://localhost:3001/api/v1/health/ready` →
    `200` (no asumir que Prisma reconectó solo).
-5. Túnel SSH local → `127.0.0.1:5436` del servidor.
+5. Túnel SSH local → `127.0.0.1:5437` del servidor.
 6. Dry-run contra el túnel, comparar resumen contra `docs/IMPORTACION_SIGA.md`.
 7. Mostrar el resumen al usuario y pedir confirmación explícita para la corrida real.
 8. Corrida real (`SIGA_DRY_RUN=0`) contra el túnel.
