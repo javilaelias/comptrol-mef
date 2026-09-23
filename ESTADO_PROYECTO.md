@@ -11,7 +11,25 @@ despliegue: `docker-compose.server.yml` (producción, `/home/usr_admin/apps/Comp
 |---|---|---|
 | SSO real + rol dedicado (`ROLE_COMPTROL`) | ✅ Cerrado 2026-09-22 | Ver `registro/gti-app.md` de JuvinFactory — implementado en el repo de `gti-app`, no en este |
 | Carga del patrimonio de SIGA a staging | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/cargar-patrimonio-siga-staging/` |
-| Columnas configurables + origen SIGA en Activos | 🟡 Implementado, falta verificación visual | `openspec/changes/activos-columnas-configurables-origen-siga/` (sin archivar todavía) |
+| Columnas configurables + origen SIGA en Activos | 🟡 Desplegado a staging, falta verificación visual del usuario | `openspec/changes/activos-columnas-configurables-origen-siga/` (sin archivar todavía) |
+| Retirar tabs "Apps" y "ENAD" del menú | ✅ Cerrado 2026-09-23 | Ver sección abajo |
+
+## Retirar "Apps" y "ENAD" del menú (2026-09-23)
+
+Pedido directo del usuario tras probar el portal: el tab "Apps" (`/applications`, catálogo de
+aplicaciones ENAD/MEF) nunca tuvo un importador ni alta manual — está vacío desde que se creó,
+funcionalidad a medio construir. El tab "ENAD" (`/enad`) es solo el importador/configurador de la
+encuesta 2025 (correr el script + responder 2 preguntas manuales); el resumen que sí se usa a
+diario (PCs, laptops, tablets, disponibilidad) ya vive en el Dashboard vía `EnadSummaryPanel`,
+independiente de este tab.
+
+Decisión (confirmada con el usuario, sin concilio propio — mismo patrón mecánico de retiro de tab
+del nav ya usado en `gti-app` para QAOPDA): quitar ambos del menú (`TopNav.tsx`), **sin borrar
+código**. Las rutas `/applications` y `/enad` siguen funcionando por URL directa — `/enad` queda
+lista para cuando el MEF publique la encuesta 2026 (mismo importador, sin tocar nada); `/applications`
+queda como base para si algún día se decide construir el importador real de ese catálogo.
+
+`tsc --noEmit` limpio. Sin cambios de backend ni de datos — el histórico ENAD 2025 no se toca.
 
 ## Carga de SIGA (2026-09-23)
 
@@ -73,7 +91,14 @@ lib/assetOrigin.ts` (`isSigaImported`, por `fingerprint`, no por `source` — m�
 `design.md`), tabla y selector en `page.tsx`, badge en `[id]/page.tsx`, `owner` agregado al
 listado del backend. `tsc --noEmit` y `next build` limpios.
 
+**Desplegado a staging 2026-09-23** (`970f561`, push autorizado por el usuario): mismo patrón
+mecánico de `git archive` limpio + backup con timestamp (`apps/api.bak.20260923-085217`,
+`apps/web.bak.20260923-085217`) + extracción sobre el bind mount + `docker restart` ya usado en
+despliegues anteriores. `.env.docker` verificado intacto por checksum antes/después. Los 3
+contenedores (`comptrol-postgres`, `comptrol-api`, `comptrol-web`) quedaron `healthy`, `curl -I`
+a `comptrol-web` responde 307 (redirect a login, igual que antes del cambio).
+
 **Pendiente, no cubierto por esta sesión:** verificación visual en navegador real (esta sesión no
 tiene acceso a un navegador interactivo) — falta confirmar que el selector, el scroll horizontal
-y el badge se ven y funcionan como se espera. **El cambio OpenSpec sigue abierto (no archivado)
-hasta esa confirmación.**
+y el badge se ven y funcionan como se espera, esta vez con la sesión propia del usuario en
+staging. **El cambio OpenSpec sigue abierto (no archivado) hasta esa confirmación.**
