@@ -168,6 +168,14 @@ con `'` para evitar la inyección de fórmulas al abrir el archivo.
   crea la alerta del umbral más cercano cruzado (no una por cada umbral pasado). Las vencidas
   generan una sola alerta por licencia y fecha (`threshold_days = -1`). Luego hace auto-resolve
   de las alertas abiertas cuyo `due_date` ya no corresponde al de la licencia.
+- Si una alerta que se cerró sola vuelve a corresponder (por ejemplo, se reactiva "alertar
+  vencidas" o la fecha vuelve a la anterior), se **reabre**: el índice único impediría crearla de
+  nuevo. Las atendidas o descartadas por una persona no se reabren.
+- La generación es una función suelta (`alerts/expiry-alerts.ts`), igual que la de licencias.
+  Corre en el cron diario, con `POST /alerts/run`, al guardar las reglas y después de cada
+  regeneración de licencias (subida del Excel, cambio de versión, carga de SIGA), así la bandeja
+  queda al día sin esperar a las 07:00.
+- `GET /alerts/rules` devuelve `canEdit` según el rol, porque la web no guarda el rol del usuario.
 - Con varias réplicas de la API el job correría varias veces, pero el índice único lo hace
   idempotente (`INSERT ... ON CONFLICT DO NOTHING`). Hoy hay una sola réplica.
 - Endpoints de administración (`PUT /alerts/rules`, `POST /alerts/run`,

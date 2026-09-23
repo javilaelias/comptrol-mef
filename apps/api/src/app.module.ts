@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AssetsModule } from './modules/assets/assets.module';
@@ -12,6 +13,7 @@ import { LicensesModule } from './modules/licenses/licenses.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { EnadModule } from './modules/enad/enad.module';
 import { IntangiblesModule } from './modules/intangibles/intangibles.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { SitesModule } from './modules/sites/sites.module';
 import { HealthModule } from './modules/health/health.module';
@@ -37,6 +39,7 @@ import { PrismaModule } from './prisma/prisma.module';
         skipIf: () => config.get('THROTTLE_ENABLED') === false,
       }),
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
     AuthModule,
@@ -48,6 +51,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ReportsModule,
     EnadModule,
     IntangiblesModule,
+    AlertsModule,
     AgentModule,
     SitesModule,
   ],

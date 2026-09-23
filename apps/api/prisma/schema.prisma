@@ -98,6 +98,8 @@ model Tenant {
   enadSurveys           EnadSurvey[]
   auditLogs             AuditLog[]
   intangibleBatches     IntangibleBatch[]
+  alertRule             AlertRule?
+  alerts                Alert[]
 
   @@map("tenants")
 }
@@ -168,6 +170,7 @@ model User {
   ownedAssets       Asset[]           @relation("AssetOwner")
   auditEvents       AuditLog[]        @relation("AuditActor")
   intangibleUploads IntangibleBatch[] @relation("IntangibleUploads")
+  resolvedAlerts    Alert[]           @relation("AlertResolver")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -488,4 +491,50 @@ model IntangibleRecord {
   @@index([batchId, poNumber, poYear])
   @@index([batchId, expiresAt])
   @@map("intangible_records")
+}
+
+enum AlertStatus {
+  open
+  acknowledged
+  dismissed
+  auto_resolved
+}
+
+/// Configuración de alertas del tenant (una sola fila por tenant).
+model AlertRule {
+  tenantId       String   @id @map("tenant_id") @db.Uuid
+  /// Días de anticipación que generan alerta (p. ej. 90, 60, 30, 7).
+  daysBefore     Int[]    @default([90, 60, 30, 7]) @map("days_before")
+  includeExpired Boolean  @default(true) @map("include_expired")
+  enabled        Boolean  @default(true)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("alert_rules")
+}
+
+/// Alerta de vencimiento. La deduplicación la garantiza el índice único (objetivo + umbral + fecha).
+model Alert {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  kind          String      @db.VarChar(40)
+  targetType    String      @map("target_type") @db.VarChar(40)
+  targetId      String      @map("target_id") @db.Uuid
+  title         String      @db.VarChar(300)
+  /// Umbral cruzado en días; -1 = ya vencida.
+  thresholdDays Int         @map("threshold_days")
+  dueDate       DateTime    @map("due_date") @db.Date
+  status        AlertStatus @default(open)
+  resolvedById  String?     @map("resolved_by_id") @db.Uuid
+  resolvedAt    DateTime?   @map("resolved_at") @db.Timestamptz(6)
+  resolution    String?     @db.VarChar(200)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  resolvedBy User?  @relation("AlertResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, kind, targetId, thresholdDays, dueDate])
+  @@index([tenantId, status])
+  @@map("alerts")
 }

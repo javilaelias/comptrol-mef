@@ -97,6 +97,24 @@ no retiradas, e indica cuántos vienen de intangibles.
 distintos (por ejemplo, "MS Project Professional" manual y "LICENCIA DE MICROSOFT PROJECT
 PROFESIONAL" de intangibles). Hoy el KPI suma ambas.
 
+## Alertas
+
+La pantalla **Alertas** (con contador en el menú) avisa de las licencias por vencer. Solo avisa
+dentro de la app; no envía correos.
+
+- Todos los días a las **07:00** (hora de Lima) se revisan las fechas de renovación. También se
+  revisan al subir el Excel, al cambiar la versión vigente y al cargar un corte de SIGA.
+- Cada licencia genera **una** alerta cuando cruza un umbral de anticipación (por defecto 90, 60, 30
+  y 7 días), y otra si ya venció. Al cruzar un umbral más cercano, la alerta anterior se cierra sola.
+- **Atender** o **Descartar** deja registrado quién y cuándo. Esa alerta no vuelve a aparecer.
+- Si una nueva versión del Excel cambia la fecha y ya no corresponde avisar, la alerta se cierra
+  sola ("Cerradas solas").
+- Los administradores (super_admin, it_admin) cambian los umbrales, si se alertan las ya vencidas,
+  y pueden desactivar las alertas. Los demás usuarios ven la configuración pero no la cambian.
+
+Con los datos actuales hay 4 alertas: las 4 licencias de intangibles vencidas. Ninguna vence en los
+próximos 90 días.
+
 ## Cargar un corte nuevo de SIGA
 
 La carga de SIGA se hace por script, porque el dump pesa varios GB:
@@ -108,8 +126,35 @@ SIGA_DATABASE_URL=postgresql://… SIGA_CUT_DATE=2026-07-15 npm run import:siga-
 - `SIGA_CUT_DATE` es obligatorio (fecha de corte del dump).
 - Repetir un corte que ya existe falla, salvo que se agregue `SIGA_REPLACE=1`.
 - No toca la tabla de activos (equipos).
-- Al terminar, recalcula las licencias que vienen de intangibles.
+- Al terminar, recalcula las licencias que vienen de intangibles y las alertas.
 
 **¿Cuándo pedir un corte nuevo de SIGA?** Cuando el Excel del coordinador sea más reciente que el
 último corte de SIGA. La pantalla lo avisa con un recuadro amarillo, porque en ese caso "Solo en
 Excel" puede mostrar bienes que SIGA todavía no refleja.
+
+## Desplegar en el servidor (runbook)
+
+1. Actualizar el código en `/home/usr_admin/apps/Comptrol/`, con el mismo procedimiento de los
+   despliegues anteriores (`git archive` + respaldo con fecha de `apps/api` y `apps/web`).
+2. **Reinstalar las dependencias de la API antes de reiniciarla.** `node_modules` vive en un
+   volumen persistente y solo se instala si falta `nest`, así que las librerías nuevas
+   (`exceljs`, `@nestjs/schedule`) no se instalarían solas y la API no compilaría:
+
+   ```bash
+   docker compose -f docker-compose.server.yml run --rm api npm ci --include=dev
+   docker compose -f docker-compose.server.yml up -d api web
+   ```
+
+3. Al arrancar, la API aplica sola las 4 migraciones nuevas (`prisma migrate deploy`). Verificar
+   con `docker compose -f docker-compose.server.yml logs api` y con el healthcheck
+   `/api/v1/health/ready`.
+4. Cargar los intangibles de SIGA por el túnel (puerto 5437):
+   `SIGA_CUT_DATE=2026-07-15 npm run import:siga-intangibles`.
+5. Subir el Excel del coordinador desde **Intangibles → Versiones y subida** (corte 30/06/2026).
+6. Revisar que los conteos coincidan con la sección "Resultado con los datos actuales".
+
+**Reversa:** volver al respaldo de `apps/api` y `apps/web` y reiniciar. Las tablas nuevas no
+molestan al código anterior. Para borrarlas del todo, hay que eliminar `intangible_batches`,
+`intangible_records`, `alert_rules` y `alerts`, las licencias con `origin='intangibles'` y las
+columnas `origin`/`origin_key`. Los valores nuevos de los enums (`perpetual`, `retired`) quedan
+sin uso, lo cual es inofensivo.

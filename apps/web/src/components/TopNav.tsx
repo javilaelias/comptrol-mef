@@ -1,13 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
+
+/** La página de alertas lo dispara al atender o descartar, para refrescar el contador del menú. */
+export const ALERTS_CHANGED_EVENT = 'comptrol:alerts-changed';
 
 export function TopNav({ title }: { title?: string }) {
   const pathname = usePathname();
+  const [openAlerts, setOpenAlerts] = useState<number | null>(null);
 
-  const navItem = (href: string, label: string) => {
+  useEffect(() => {
+    let alive = true;
+    const refresh = () =>
+      apiFetch<{ open: number }>('/alerts/count')
+        .then((c) => alive && setOpenAlerts(c.open))
+        .catch(() => undefined); // el contador es accesorio: si falla, el menú sigue igual
+    refresh();
+    window.addEventListener(ALERTS_CHANGED_EVENT, refresh);
+    return () => {
+      alive = false;
+      window.removeEventListener(ALERTS_CHANGED_EVENT, refresh);
+    };
+  }, [pathname]);
+
+  const navItem = (href: string, label: React.ReactNode) => {
     const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
     return (
       <Link
@@ -45,6 +64,20 @@ export function TopNav({ title }: { title?: string }) {
           {navItem('/assets', 'Activos')}
           {navItem('/intangibles', 'Intangibles')}
           {navItem('/licenses', 'Licencias')}
+          {navItem(
+            '/alerts',
+            <>
+              Alertas
+              {openAlerts ? (
+                <span
+                  className="ml-1.5 inline-block min-w-[1.25rem] rounded-full bg-amber-400 px-1.5 text-center text-xs font-bold text-black"
+                  title={`${openAlerts} alertas abiertas`}
+                >
+                  {openAlerts > 99 ? '99+' : openAlerts}
+                </span>
+              ) : null}
+            </>,
+          )}
           {navItem('/sites', 'Sedes')}
         </nav>
       </div>

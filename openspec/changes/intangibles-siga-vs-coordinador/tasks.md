@@ -39,12 +39,12 @@
 
 ## 6. Alertas (fase 3)
 
-- [ ] 6.0 Migración de la fase 3: tablas `alert_rules` y `alerts` con el índice único de deduplicación
+- [x] 6.0 Migración `20260923170000_expiry_alerts`: tablas `alert_rules` (una fila por tenant) y `alerts` con el índice único de deduplicación (solo tablas nuevas)
 
-- [ ] 6.1 Agregar `@nestjs/schedule`; crear el módulo `alerts`
-- [ ] 6.2 Generador: umbral más cercano cruzado, vencidas agrupadas por licencia, `ON CONFLICT DO NOTHING`, auto-resolve cuando cambia el vencimiento; cron diario 07:00 America/Lima + `POST /alerts/run`
-- [ ] 6.4 `GET /alerts`, `GET /alerts/count`, `POST /alerts/:id/ack|dismiss` (registra quién y cuándo), `GET/PUT /alerts/rules` (una fila por tenant); `PUT /alerts/rules`, `POST /alerts/run` y `POST /licenses/regenerate` con `@Roles('super_admin','it_admin')`
-- [ ] 6.5 Tests: sin duplicados en dos corridas, primera corrida agrupada, cambio de umbrales, auto-resolve
+- [x] 6.1 Agregar `@nestjs/schedule`; crear el módulo `alerts`
+- [x] 6.2 Generador: umbral más cercano cruzado, vencidas agrupadas por licencia, `createMany skipDuplicates` (ON CONFLICT DO NOTHING), auto-resolve cuando cambia el vencimiento, reapertura de las cerradas solas que vuelven a corresponder; también corre tras cada regeneración de licencias; cron diario 07:00 America/Lima + `POST /alerts/run`
+- [x] 6.4 `GET /alerts`, `GET /alerts/count`, `POST /alerts/:id/ack|dismiss` (registra quién y cuándo), `GET/PUT /alerts/rules` (una fila por tenant); `PUT /alerts/rules`, `POST /alerts/run` y `POST /licenses/regenerate` con `@Roles('super_admin','it_admin')`
+- [x] 6.5 Tests: sin duplicados en dos corridas, primera corrida agrupada, cambio de umbrales, auto-resolve
 
 ## 7. Web
 
@@ -52,13 +52,13 @@
 - [x] 7.2 `/intangibles`: botón "Subir Excel" (archivo + fecha de corte sugerida desde el nombre, resultado con advertencias) y pestaña Versiones (historial y "hacer vigente")
 - [x] 7.3 `/intangibles`: pestaña Comparación (seis vistas con conteo, aviso de cortes desfasados, exportar xlsx por vista)
 - [x] 7.4 `/licenses`: lista con búsqueda y filtro por estado, y detalle con los bienes del grupo
-- [ ] 7.5 `/alerts`: bandeja por estado, Atender/Descartar, configuración de reglas (solo admins)
-- [ ] 7.6 `TopNav`: "Intangibles" y "Licencias" hechos; falta "Alertas (n)" con el contador (fase 3)
-- [ ] 7.7 `tsc --noEmit` limpio en `apps/web` y `apps/api`; lint (fase 1: limpio en los archivos nuevos; `auth.service.spec.ts` y `main.ts` traen errores previos, no introducidos aquí)
+- [x] 7.5 `/alerts`: bandeja por estado, Atender/Descartar, configuración de reglas (solo admins)
+- [x] 7.6 `TopNav`: "Intangibles", "Licencias" y "Alertas (n)" con el contador (se refresca al navegar y al atender/descartar)
+- [x] 7.7 `tsc --noEmit` limpio en `apps/web` y `apps/api`; lint (fase 1: limpio en los archivos nuevos; `auth.service.spec.ts` y `main.ts` traen errores previos, no introducidos aquí)
 
 ## 8. Verificación y documentación
 
-- [ ] 8.1 Recorrido completo en local: migración → carga de SIGA → subida del Excel → comparación → exportaciones → licencias → correr alertas
-- [ ] 8.2 Escribir `docs/INTANGIBLES.md` (qué es cada vista, precedencia SIGA/Excel, cómo subir una nueva versión, cuándo pedir un corte nuevo de SIGA, alertas)
-- [ ] 8.3 Runbook de despliegue: `docker compose -f docker-compose.server.yml run --rm api npm ci --include=dev` antes de `up -d api`; verificar los logs y `/api/v1/health/ready` (concilio H1)
-- [ ] 8.4 Actualizar `ESTADO_PROYECTO.md` con el bloque nuevo
+- [x] 8.1 Recorrido completo en local: migración → carga de SIGA → subida del Excel → comparación → exportaciones → licencias → correr alertas
+- [x] 8.2 Escribir `docs/INTANGIBLES.md` (qué es cada vista, precedencia SIGA/Excel, cómo subir una nueva versión, cuándo pedir un corte nuevo de SIGA, alertas)
+- [x] 8.3 Runbook de despliegue: `docker compose -f docker-compose.server.yml run --rm api npm ci --include=dev` antes de `up -d api`; verificar los logs y `/api/v1/health/ready` (concilio H1)
+- [x] 8.4 Actualizar `ESTADO_PROYECTO.md` con el bloque nuevo

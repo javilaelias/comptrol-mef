@@ -17,6 +17,7 @@ import {
 } from '../../api/node_modules/@prisma/client';
 // Misma logica que usa la API al subir el Excel (una sola implementacion).
 import { regenerateLicensesFromIntangibles } from '../../api/src/modules/licenses/licenses-from-intangibles';
+import { generateExpiryAlerts } from '../../api/src/modules/alerts/expiry-alerts';
 
 /**
  * Carga los bienes intangibles de SIGA (licencias y software: grupo 14, clase 04) como una
@@ -189,6 +190,8 @@ async function main() {
       `Licencias desde intangibles: ${licencias.groups} grupos ` +
         `(${licencias.created} nuevas, ${licencias.updated} actualizadas, ${licencias.retired} retiradas)`,
     );
+    const alertas = await generateExpiryAlerts(prisma, tenant.id);
+    console.log(`Alertas de vencimiento: ${alertas.created} nuevas, ${alertas.autoResolved} cerradas solas`);
   } finally {
     await siga.end();
     await prisma.$disconnect();

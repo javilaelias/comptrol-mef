@@ -2,6 +2,10 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { LicenseStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  generateExpiryAlerts,
+  type GenerateAlertsResult,
+} from '../alerts/expiry-alerts';
+import {
   LICENSE_ORIGIN_INTANGIBLES,
   licenseGroupKey,
   loadIntangibleGroups,
@@ -99,11 +103,14 @@ export class LicensesService {
     tenantId: string,
     actorUserId: string | null,
     reason: string,
-  ): Promise<RegenerateResult> {
-    const result = await regenerateLicensesFromIntangibles(
+  ): Promise<RegenerateResult & { alerts: GenerateAlertsResult }> {
+    const licenses = await regenerateLicensesFromIntangibles(
       this.prisma,
       tenantId,
     );
+    // Si cambiaron fechas de renovación, las alertas se ponen al día sin esperar la revisión diaria.
+    const alerts = await generateExpiryAlerts(this.prisma, tenantId);
+    const result = { ...licenses, alerts };
     this.logger.log(
       `Licencias desde intangibles (${reason}): ${JSON.stringify(result)}`,
     );
@@ -115,7 +122,7 @@ export class LicensesService {
           entityType: 'software_licenses',
           entityId: tenantId,
           action: 'regenerate_from_intangibles',
-          metadata: { reason, ...result },
+          metadata: { reason, ...licenses, alerts },
         },
       });
     }
