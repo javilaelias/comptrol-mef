@@ -13,7 +13,40 @@ despliegue: `docker-compose.server.yml` (producción, `/home/usr_admin/apps/Comp
 | Carga del patrimonio de SIGA a staging | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/cargar-patrimonio-siga-staging/` |
 | Columnas configurables + origen SIGA en Activos | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/2026-09-23-activos-columnas-configurables-origen-siga/` — spec sincronizado a `openspec/specs/asset-list-configurable-columns/` |
 | Retirar tabs "Apps" y "ENAD" del menú | ✅ Cerrado 2026-09-23 | Ver sección abajo |
-| Intangibles: SIGA vs Excel del coordinador + licencias + alertas | 🟡 Fases 1, 2 y 3 implementadas y probadas en local, rama `feat/intangibles`, sin desplegar 2026-09-23 | `openspec/changes/intangibles-siga-vs-coordinador/` (concilio 5 revisores, APROBADO CON CAMBIOS); guía de uso en `docs/INTANGIBLES.md`. Alertas solo en la app, sin correo. Runbook de despliegue en `docs/INTANGIBLES.md` (ojo: forzar `npm ci` en la API). Decisión abierta: posible doble conteo de licencias manuales vs de intangibles en el KPI del Dashboard. Reemplaza las alertas de Vencix; el resto de Vencix se migrará en un cambio posterior |
+| Intangibles: SIGA vs Excel del coordinador + licencias + alertas | 🟡 Fases 1, 2 y 3 **desplegadas en staging** 2026-09-23 (`ffb9bcc`, rama `feat/intangibles`, aún no fusionada a `main`); falta que el usuario suba el Excel del coordinador y confirme — ver sección "Despliegue de Intangibles" | `openspec/changes/intangibles-siga-vs-coordinador/` (concilio 5 revisores, APROBADO CON CAMBIOS); guía de uso en `docs/INTANGIBLES.md`. Alertas solo en la app, sin correo. Runbook de despliegue en `docs/INTANGIBLES.md` (ojo: forzar `npm ci` en la API). Decisión abierta: posible doble conteo de licencias manuales vs de intangibles en el KPI del Dashboard. Reemplaza las alertas de Vencix; el resto de Vencix se migrará en un cambio posterior |
+
+## Despliegue de Intangibles en staging (2026-09-23)
+
+Autorizado por el usuario. Commit `ffb9bcc` (rama `feat/intangibles`, subida a `origin`; `main` sin
+tocar). Mismo patrón que despliegues anteriores, con dos resguardos adicionales:
+
+- **Respaldo de la base antes de migrar:** `pg_dump -Fc` en el contenedor
+  (`/tmp/comptrol-antes-intangibles-20260923-120421.dump`, 3 MB, 16 tablas) + copia local en
+  `D:\MV\Comptrol-MEF-respaldos\`.
+- **Respaldo del código:** `apps/api.bak.20260923-120439` y `apps/web.bak.20260923-120439`.
+- `git archive` de `apps/api` y `apps/web` extraído encima; `.env.docker` verificado intacto por
+  checksum antes y después.
+- API detenida → `docker compose run --rm --no-deps api npm ci --include=dev` (concilio H1:
+  el volumen `api_node_modules` no se reinstala solo) → `docker start`. **Caída de la API: ~70 s.**
+  Se aplicaron las 4 migraciones nuevas (10 en total); el `prisma db seed` del servidor no hizo
+  nada (hay activos y no hay `SEED_RESET`). `docker restart comptrol-web` recompiló la web.
+- Carga por túnel SSH (5437): `import:siga-intangibles` con corte 2026-07-15 → 10,120 bienes
+  (9,986 vigentes, 134 de baja), 196 licencias desde intangibles, 3 alertas.
+- Verificado: 37,369 activos intactos, `/intangibles`, `/licenses`, `/alerts` y `/dashboard`
+  responden 200; endpoints nuevos responden 401 sin sesión; los 3 contenedores `healthy`.
+
+**Pendiente del usuario:** subir el Excel del coordinador (corte 30/06/2026) desde Intangibles →
+Versiones y subida, y confirmar que ve lo mismo que en local.
+
+**Hallazgos / deuda:**
+- Acceso SSH: la llave que funciona es `~/.ssh/fpwebmef_gti_test` (no hay `~/.ssh/config`).
+- El disco `/` del servidor está al **97 % (≈620 MB libres)**. Los datos de Docker viven en `/var`
+  (18 GB libres), así que no bloqueó el despliegue, pero hay que limpiar `/`. Docker también reporta
+  ~10 GB de imágenes y ~4.9 GB de caché de build recuperables (en `/var`).
+- Las 3 licencias "manuales" del servidor (Microsoft 365 3,500; Antivirus EDR 3,200; Adobe Acrobat
+  500) parecen **datos de demo del seed**, y ya generan 3 alertas (una vencida el 07/09/2026).
+  Confirmar con el usuario si se borran.
+- El `docker-compose.server.yml` del servidor sigue distinto del repo (deuda ya registrada abajo).
 
 ## Retirar "Apps" y "ENAD" del menú (2026-09-23)
 
