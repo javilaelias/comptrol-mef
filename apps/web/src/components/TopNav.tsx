@@ -43,6 +43,7 @@ export function TopNav({ title }: { title?: string }) {
         <nav className="flex flex-wrap items-center gap-2">
           {navItem('/dashboard', 'Dashboard')}
           {navItem('/assets', 'Activos')}
+          {navItem('/intangibles', 'Intangibles')}
           {navItem('/sites', 'Sedes')}
         </nav>
       </div>

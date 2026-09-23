@@ -28,6 +28,8 @@ async function bootstrap() {
       return cb(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
+    // Para que la web lea el nombre del archivo en las descargas (exportaciones a Excel).
+    exposedHeaders: ['Content-Disposition'],
   });
 
   app.setGlobalPrefix('api/v1');

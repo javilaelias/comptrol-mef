@@ -11,6 +11,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LicensesModule } from './modules/licenses/licenses.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { EnadModule } from './modules/enad/enad.module';
+import { IntangiblesModule } from './modules/intangibles/intangibles.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { SitesModule } from './modules/sites/sites.module';
 import { HealthModule } from './modules/health/health.module';
@@ -46,6 +47,7 @@ import { PrismaModule } from './prisma/prisma.module';
     LicensesModule,
     ReportsModule,
     EnadModule,
+    IntangiblesModule,
     AgentModule,
     SitesModule,
   ],

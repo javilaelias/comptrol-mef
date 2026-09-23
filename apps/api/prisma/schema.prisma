@@ -84,17 +84,18 @@ model Tenant {
   slug      String   @unique @db.VarChar(80)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  sites     Site[]
-  locations Location[]
-  orgUnits  OrgUnit[]
-  users     User[]
-  assets    Asset[]
+  sites                 Site[]
+  locations             Location[]
+  orgUnits              OrgUnit[]
+  users                 User[]
+  assets                Asset[]
   softwareInstallations SoftwareInstallation[]
-  applications Application[]
-  licenseHoldings LicenseHolding[]
-  licenses  SoftwareLicense[]
-  enadSurveys EnadSurvey[]
-  auditLogs AuditLog[]
+  applications          Application[]
+  licenseHoldings       LicenseHolding[]
+  licenses              SoftwareLicense[]
+  enadSurveys           EnadSurvey[]
+  auditLogs             AuditLog[]
+  intangibleBatches     IntangibleBatch[]
 
   @@map("tenants")
 }
@@ -114,7 +115,7 @@ model Site {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   locations Location[]
 
   @@unique([tenantId, name])
@@ -137,8 +138,8 @@ model Location {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  site   Site?  @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  site   Site?   @relation(fields: [siteId], references: [id], onDelete: SetNull)
   assets Asset[]
 
   @@unique([tenantId, name])
@@ -148,22 +149,23 @@ model Location {
 }
 
 model User {
-  id          String     @id @default(uuid()) @db.Uuid
-  tenantId    String     @map("tenant_id") @db.Uuid
-  email       String     @db.VarChar(190)
-  fullName    String     @map("full_name") @db.VarChar(140)
-  role        UserRole
-  status      UserStatus @default(active)
-  mfaEnabled  Boolean    @default(false) @map("mfa_enabled")
-  ssoProvider String?    @map("sso_provider") @db.VarChar(40)
-  passwordHash String?   @map("password_hash") @db.VarChar(255)
-  lastLoginAt DateTime?  @map("last_login_at") @db.Timestamptz(6)
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  email        String     @db.VarChar(190)
+  fullName     String     @map("full_name") @db.VarChar(140)
+  role         UserRole
+  status       UserStatus @default(active)
+  mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
+  ssoProvider  String?    @map("sso_provider") @db.VarChar(40)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  lastLoginAt  DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ownedAssets Asset[] @relation("AssetOwner")
-  auditEvents AuditLog[] @relation("AuditActor")
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownedAssets       Asset[]           @relation("AssetOwner")
+  auditEvents       AuditLog[]        @relation("AuditActor")
+  intangibleUploads IntangibleBatch[] @relation("IntangibleUploads")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -186,48 +188,48 @@ model OrgUnit {
 }
 
 model Asset {
-  id                String           @id @default(uuid()) @db.Uuid
-  tenantId           String           @map("tenant_id") @db.Uuid
-  assetTag          String           @map("asset_tag") @db.VarChar(80)
-  inventoryCode     String?          @map("inventory_code") @db.VarChar(40)
-  description       String?          @db.Text
-  serialNumber      String?          @map("serial_number") @db.VarChar(120)
-  hostname          String?          @db.VarChar(120)
-  ipAddress         String?          @map("ip_address") @db.Inet
-  macAddress        String?          @map("mac_address") @db.VarChar(17)
-  assetType         AssetType        @map("asset_type")
-  vendor            String?          @db.VarChar(80)
-  model             String?          @db.VarChar(120)
-  operatingSystem   String?          @map("operating_system") @db.VarChar(120)
-  osVersion         String?          @map("os_version") @db.VarChar(120)
-  cpuModel          String?          @map("cpu_model") @db.VarChar(200)
-  cpuCores          Int?             @map("cpu_cores")
-  cpuLogical        Int?             @map("cpu_logical")
-  ramMb             Int?             @map("ram_mb")
-  storageGb         Int?             @map("storage_gb")
-  status            AssetStatus      @default(in_use)
-  conditionLabel    String?          @map("condition_label") @db.VarChar(40)
-  criticality       AssetCriticality @default(medium)
-  ownerUserId       String?          @map("owner_user_id") @db.Uuid
-  locationId        String?          @map("location_id") @db.Uuid
-  orgUnitId         String?          @map("org_unit_id") @db.Uuid
-  purchaseDate      DateTime?        @map("purchase_date") @db.Date
-  acquisitionYear   Int?             @map("acquisition_year")
-  warrantyEndDate   DateTime?        @map("warranty_end_date") @db.Date
-  depreciationEndDate DateTime?      @map("depreciation_end_date") @db.Date
-  purchaseCost      Decimal          @default(0) @map("purchase_cost") @db.Decimal(14, 2)
-  currentBookValue  Decimal          @default(0) @map("current_book_value") @db.Decimal(14, 2)
-  lastSeenAt        DateTime?        @map("last_seen_at") @db.Timestamptz(6)
-  lastInventoryAt   DateTime?        @map("last_inventory_at") @db.Timestamptz(6)
-  source            AssetSource      @default(manual)
-  fingerprint       String?          @db.VarChar(200)
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String           @id @default(uuid()) @db.Uuid
+  tenantId            String           @map("tenant_id") @db.Uuid
+  assetTag            String           @map("asset_tag") @db.VarChar(80)
+  inventoryCode       String?          @map("inventory_code") @db.VarChar(40)
+  description         String?          @db.Text
+  serialNumber        String?          @map("serial_number") @db.VarChar(120)
+  hostname            String?          @db.VarChar(120)
+  ipAddress           String?          @map("ip_address") @db.Inet
+  macAddress          String?          @map("mac_address") @db.VarChar(17)
+  assetType           AssetType        @map("asset_type")
+  vendor              String?          @db.VarChar(80)
+  model               String?          @db.VarChar(120)
+  operatingSystem     String?          @map("operating_system") @db.VarChar(120)
+  osVersion           String?          @map("os_version") @db.VarChar(120)
+  cpuModel            String?          @map("cpu_model") @db.VarChar(200)
+  cpuCores            Int?             @map("cpu_cores")
+  cpuLogical          Int?             @map("cpu_logical")
+  ramMb               Int?             @map("ram_mb")
+  storageGb           Int?             @map("storage_gb")
+  status              AssetStatus      @default(in_use)
+  conditionLabel      String?          @map("condition_label") @db.VarChar(40)
+  criticality         AssetCriticality @default(medium)
+  ownerUserId         String?          @map("owner_user_id") @db.Uuid
+  locationId          String?          @map("location_id") @db.Uuid
+  orgUnitId           String?          @map("org_unit_id") @db.Uuid
+  purchaseDate        DateTime?        @map("purchase_date") @db.Date
+  acquisitionYear     Int?             @map("acquisition_year")
+  warrantyEndDate     DateTime?        @map("warranty_end_date") @db.Date
+  depreciationEndDate DateTime?        @map("depreciation_end_date") @db.Date
+  purchaseCost        Decimal          @default(0) @map("purchase_cost") @db.Decimal(14, 2)
+  currentBookValue    Decimal          @default(0) @map("current_book_value") @db.Decimal(14, 2)
+  lastSeenAt          DateTime?        @map("last_seen_at") @db.Timestamptz(6)
+  lastInventoryAt     DateTime?        @map("last_inventory_at") @db.Timestamptz(6)
+  source              AssetSource      @default(manual)
+  fingerprint         String?          @db.VarChar(200)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner    User?    @relation("AssetOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  orgUnit  OrgUnit? @relation(fields: [orgUnitId], references: [id], onDelete: SetNull)
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner                 User?                  @relation("AssetOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  location              Location?              @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  orgUnit               OrgUnit?               @relation(fields: [orgUnitId], references: [id], onDelete: SetNull)
   softwareInstallations SoftwareInstallation[]
 
   @@unique([tenantId, assetTag])
@@ -261,16 +263,16 @@ model SoftwareInstallation {
 }
 
 model Application {
-  id               String   @id @default(uuid()) @db.Uuid
-  tenantId         String   @map("tenant_id") @db.Uuid
-  name             String   @db.VarChar(240)
-  objective        String?  @db.Text
-  ownerOrgUnit     String?  @map("owner_org_unit") @db.VarChar(200)
-  status           String?  @db.VarChar(80)
-  lastUpdateYear   Int?     @map("last_update_year")
-  sourceDocument   String?  @map("source_document") @db.VarChar(200)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  name           String   @db.VarChar(240)
+  objective      String?  @db.Text
+  ownerOrgUnit   String?  @map("owner_org_unit") @db.VarChar(200)
+  status         String?  @db.VarChar(80)
+  lastUpdateYear Int?     @map("last_update_year")
+  sourceDocument String?  @map("source_document") @db.VarChar(200)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -309,9 +311,9 @@ model EnadSurvey {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  rawPages     EnadRawPage[]
-  items        EnadItem[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rawPages      EnadRawPage[]
+  items         EnadItem[]
   manualAnswers EnadManualAnswer[]
 
   @@unique([tenantId, year])
@@ -351,12 +353,12 @@ model EnadItem {
 }
 
 model EnadManualAnswer {
-  id               String   @id @default(uuid()) @db.Uuid
-  surveyId          String  @map("survey_id") @db.Uuid
-  questionCode      Int     @map("question_code")
+  id                  String   @id @default(uuid()) @db.Uuid
+  surveyId            String   @map("survey_id") @db.Uuid
+  questionCode        Int      @map("question_code")
   selectedOptionCodes String[] @default([]) @map("selected_option_codes")
-  answerText        String? @map("answer_text") @db.Text
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  answerText          String?  @map("answer_text") @db.Text
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   survey EnadSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
@@ -365,21 +367,21 @@ model EnadManualAnswer {
 }
 
 model SoftwareLicense {
-  id            String        @id @default(uuid()) @db.Uuid
-  tenantId      String        @map("tenant_id") @db.Uuid
-  softwareName  String        @map("software_name") @db.VarChar(140)
-  vendor        String?       @db.VarChar(120)
-  licenseType   LicenseType   @map("license_type")
-  totalSeats    Int           @map("total_seats")
-  assignedSeats Int           @default(0) @map("assigned_seats")
-  activeAgents  Int           @default(0) @map("active_agents")
-  inactiveAgents Int          @default(0) @map("inactive_agents")
-  unitCost      Decimal       @default(0) @map("unit_cost") @db.Decimal(14, 2)
-  renewalDate   DateTime?     @map("renewal_date") @db.Date
-  autoRenew     Boolean       @default(false) @map("auto_renew")
-  status        LicenseStatus @default(active)
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  softwareName   String        @map("software_name") @db.VarChar(140)
+  vendor         String?       @db.VarChar(120)
+  licenseType    LicenseType   @map("license_type")
+  totalSeats     Int           @map("total_seats")
+  assignedSeats  Int           @default(0) @map("assigned_seats")
+  activeAgents   Int           @default(0) @map("active_agents")
+  inactiveAgents Int           @default(0) @map("inactive_agents")
+  unitCost       Decimal       @default(0) @map("unit_cost") @db.Decimal(14, 2)
+  renewalDate    DateTime?     @map("renewal_date") @db.Date
+  autoRenew      Boolean       @default(false) @map("auto_renew")
+  status         LicenseStatus @default(active)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -407,4 +409,76 @@ model AuditLog {
 
   @@index([tenantId, entityType, entityId, createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+enum IntangibleSource {
+  siga
+  coordinator
+}
+
+enum IntangibleStatus {
+  active
+  retired
+}
+
+/// Una versión (corte) de los intangibles de una fuente: SIGA (script) o el Excel del coordinador (subida).
+/// Las versiones no se modifican; solo cambia cuál es la vigente (índice único parcial en la migración).
+model IntangibleBatch {
+  id           String           @id @default(uuid()) @db.Uuid
+  tenantId     String           @map("tenant_id") @db.Uuid
+  source       IntangibleSource
+  cutDate      DateTime         @map("cut_date") @db.Date
+  fileName     String?          @map("file_name") @db.VarChar(200)
+  uploadedById String?          @map("uploaded_by_id") @db.Uuid
+  rowCount     Int              @default(0) @map("row_count")
+  warnings     Json?            @db.JsonB
+  isCurrent    Boolean          @default(false) @map("is_current")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  uploadedBy User?              @relation("IntangibleUploads", fields: [uploadedById], references: [id], onDelete: SetNull)
+  records    IntangibleRecord[]
+
+  @@index([tenantId, source, cutDate])
+  @@index([tenantId, source, isCurrent])
+  @@map("intangible_batches")
+}
+
+/// Un bien intangible dentro de una versión. Las columnas que solo trae una fuente quedan en NULL en la otra.
+model IntangibleRecord {
+  id               String            @id @default(uuid()) @db.Uuid
+  batchId          String            @map("batch_id") @db.Uuid
+  rowNumber        Int?              @map("row_number")
+  patrimonialCode  String            @map("patrimonial_code") @db.VarChar(40)
+  inventoryCode    String?           @map("inventory_code") @db.VarChar(40)
+  description      String?           @db.Text
+  brand            String?           @db.VarChar(120)
+  model            String?           @db.VarChar(120)
+  status           IntangibleStatus?
+  poNumber         Int?              @map("po_number")
+  poYear           Int?              @map("po_year")
+  supplierName     String?           @map("supplier_name") @db.VarChar(250)
+  supplierRuc      String?           @map("supplier_ruc") @db.VarChar(20)
+  contractNumber   String?           @map("contract_number") @db.VarChar(60)
+  registeredAt     DateTime?         @map("registered_at") @db.Date
+  initialValue     Decimal?          @map("initial_value") @db.Decimal(14, 2)
+  siteName         String?           @map("site_name") @db.VarChar(160)
+  orgUnit          String?           @map("org_unit") @db.VarChar(250)
+  physicalLocation String?           @map("physical_location") @db.VarChar(300)
+  accountCode      String?           @map("account_code") @db.VarChar(30)
+  accountName      String?           @map("account_name") @db.VarChar(160)
+  conditionNorm    String?           @map("condition_norm") @db.VarChar(40)
+  conditionRaw     String?           @map("condition_raw") @db.VarChar(120)
+  expiresAt        DateTime?         @map("expires_at") @db.Date
+  justification    String?           @db.Text
+  hr               String?           @db.Text
+  document         String?           @db.Text
+  raw              Json?             @db.JsonB
+
+  batch IntangibleBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, patrimonialCode])
+  @@index([batchId, poNumber, poYear])
+  @@index([batchId, expiresAt])
+  @@map("intangible_records")
 }

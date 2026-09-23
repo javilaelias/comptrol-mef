@@ -20,14 +20,15 @@ async function doFetch(path: string, init: RequestInit, token: string | null): P
   return fetch(`${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      // Con FormData el navegador arma el Content-Type multipart (con su boundary).
+      ...(init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },
   });
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request(path: string, init: RequestInit): Promise<Response> {
   const token = getToken();
   let res = await doFetch(path, init, token);
 
@@ -46,6 +47,25 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const err: ApiError = { status: res.status, message: String(message) };
     throw err;
   }
+  return res;
+}
 
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await request(path, init);
   return (await res.json()) as T;
+}
+
+/** Descarga un archivo de la API (con el token de la sesión) y lo guarda con el nombre que indica el servidor. */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const res = await request(path, { method: 'GET' });
+  const disposition = res.headers.get('content-disposition') ?? '';
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
