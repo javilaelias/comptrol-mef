@@ -105,7 +105,7 @@ async function main() {
   if (reset) {
     await prisma.licenseHolding.deleteMany({ where: { tenantId: tenant.id } });
     await prisma.application.deleteMany({ where: { tenantId: tenant.id } });
-    await prisma.softwareLicense.deleteMany({ where: { tenantId: tenant.id } });
+    await prisma.softwareLicense.deleteMany({ where: { tenantId: tenant.id, origin: 'manual' } }); // las de intangibles se regeneran aparte
     await prisma.asset.deleteMany({ where: { tenantId: tenant.id } });
     await prisma.location.deleteMany({ where: { tenantId: tenant.id } });
     await prisma.site.deleteMany({ where: { tenantId: tenant.id } });
@@ -333,7 +333,7 @@ async function main() {
     .filter((t) => t.total > 0);
 
   if (reset) {
-    await prisma.softwareLicense.deleteMany({ where: { tenantId: tenant.id } });
+    await prisma.softwareLicense.deleteMany({ where: { tenantId: tenant.id, origin: 'manual' } });
   }
 
   if (toUpsert.length) {
@@ -341,7 +341,7 @@ async function main() {
     const nameChunk = 500;
     for (let i = 0; i < names.length; i += nameChunk) {
       await prisma.softwareLicense.deleteMany({
-        where: { tenantId: tenant.id, softwareName: { in: names.slice(i, i + nameChunk) } },
+        where: { tenantId: tenant.id, origin: 'manual', softwareName: { in: names.slice(i, i + nameChunk) } },
       });
     }
 

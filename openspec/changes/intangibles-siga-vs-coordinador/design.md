@@ -131,7 +131,7 @@ con `'` para evitar la inyección de fórmulas al abrir el archivo.
 - Migración: agregar `perpetual` al enum `LicenseType` y `retired` al enum `LicenseStatus` (no
   existen hoy); agregar a `software_licenses` las columnas `origin varchar(30) default 'manual'` y
   `origin_key varchar(300) null`, con índice único parcial `(tenant_id, origin, origin_key) WHERE
-  origin_key IS NOT NULL`.
+  origin_key IS NOT NULL`. `import:docs` se ajustó para borrar solo licencias `origin='manual'`.
 - `LicensesFromIntangiblesService.regenerate(tenantId)`: toma el batch SIGA vigente + el
   coordinador vigente, agrupa por `origin_key = upper(unaccent(collapse_spaces(description)))` y
   hace upsert con `origin='intangibles'`: `softwareName`, `vendor` (moda de la marca),
@@ -146,6 +146,13 @@ con `'` para evitar la inyección de fórmulas al abrir el archivo.
 - Se ejecuta al final de la carga de SIGA, al subir el Excel, al cambiar la versión vigente y
   con `POST /licenses/regenerate` (admins).
 - La relación licencia→bienes no se persiste: se consulta por `origin_key` sobre el batch vigente.
+- La lógica vive en una función suelta (`licenses/licenses-from-intangibles.ts`) que usan la API
+  y el script de SIGA. El script importa el cliente de Prisma de `apps/api/node_modules` (misma
+  convención que `import-docs.ts`), porque el cliente de la raíz del repo no se regenera con el
+  esquema de la API.
+- "SIN MARCA" de SIGA no se usa como fabricante (queda vacío).
+- Si la regeneración falla al subir el Excel o cambiar la versión, la subida no se revierte: la
+  respuesta trae `licenses.ok = false`, queda en el log y se reintenta con `POST /licenses/regenerate`.
 - Web `/licenses`: lista y detalle (bienes del grupo).
 
 ### D7. Alertas

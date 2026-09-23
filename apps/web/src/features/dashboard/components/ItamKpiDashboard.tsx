@@ -7,6 +7,8 @@ type KpiKey = 'totalAssets' | 'inactiveLicenses' | 'ewasteCandidates' | 'invento
 export interface DashboardMetrics {
   totalAssets: number;
   inactiveLicenses: number;
+  /** De `inactiveLicenses`, cuántos asientos vienen de la agrupación de intangibles. */
+  intangibleLicenseSeats?: number;
   ewasteCandidates: number;
   inventoryValue: number;
   reporting24h: number;
@@ -16,6 +18,7 @@ export interface DashboardMetrics {
 interface KpiCardProps {
   label: string;
   value: string;
+  detail?: string;
   tone: 'neutral' | 'warning' | 'danger' | 'success';
 }
 
@@ -26,11 +29,12 @@ const toneMap: Record<KpiCardProps['tone'], string> = {
   success: 'border-[color:var(--color-brand)] bg-[color:var(--color-brand-weak)]',
 };
 
-function KpiCard({ label, value, tone }: KpiCardProps) {
+function KpiCard({ label, value, detail, tone }: KpiCardProps) {
   return (
     <div className={`rounded-2xl border p-5 shadow-sm ${toneMap[tone]}`}>
       <p className="text-sm font-semibold text-black/70">{label}</p>
       <p className="mt-2 text-3xl font-extrabold tracking-tight text-black">{value}</p>
+      {detail && <p className="mt-1 text-xs text-black/60">{detail}</p>}
     </div>
   );
 }
@@ -48,7 +52,7 @@ export interface ItamKpiDashboardProps {
 }
 
 export const ItamKpiDashboard: React.FC<ItamKpiDashboardProps> = ({ metrics }) => {
-  const cards: Array<{ key: KpiKey; label: string; value: string; tone: KpiCardProps['tone'] }> = [
+  const cards: Array<{ key: KpiKey; label: string; value: string; detail?: string; tone: KpiCardProps['tone'] }> = [
     {
       key: 'totalAssets',
       label: 'Total de activos',
@@ -71,6 +75,9 @@ export const ItamKpiDashboard: React.FC<ItamKpiDashboardProps> = ({ metrics }) =
       key: 'inactiveLicenses',
       label: 'Licencias registradas (total)',
       value: metrics.inactiveLicenses.toLocaleString('es-PE'),
+      detail: metrics.intangibleLicenseSeats
+        ? `De ellas, ${metrics.intangibleLicenseSeats.toLocaleString('es-PE')} desde intangibles`
+        : undefined,
       tone: 'neutral',
     },
     {
@@ -97,7 +104,7 @@ export const ItamKpiDashboard: React.FC<ItamKpiDashboardProps> = ({ metrics }) =
       </div>
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
-          <KpiCard key={c.key} label={c.label} value={c.value} tone={c.tone} />
+          <KpiCard key={c.key} label={c.label} value={c.value} detail={c.detail} tone={c.tone} />
         ))}
       </div>
     </section>

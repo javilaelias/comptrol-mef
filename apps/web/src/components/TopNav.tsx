@@ -44,6 +44,7 @@ export function TopNav({ title }: { title?: string }) {
           {navItem('/dashboard', 'Dashboard')}
           {navItem('/assets', 'Activos')}
           {navItem('/intangibles', 'Intangibles')}
+          {navItem('/licenses', 'Licencias')}
           {navItem('/sites', 'Sedes')}
         </nav>
       </div>

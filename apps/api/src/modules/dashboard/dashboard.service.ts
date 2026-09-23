@@ -14,6 +14,7 @@ export class DashboardService {
       totalAssets,
       ewasteCandidates,
       licenseAgg,
+      intangibleLicenseAgg,
       inventoryAgg,
       reporting24h,
       staleAssets30d,
@@ -25,8 +26,13 @@ export class DashboardService {
           status: { in: ['in_stock', 'retired', 'disposed'] },
         },
       }),
+      // Las licencias retiradas (p. ej. grupos de intangibles dados de baja) no suman.
       this.prisma.softwareLicense.aggregate({
-        where: { tenantId },
+        where: { tenantId, status: { not: 'retired' } },
+        _sum: { totalSeats: true },
+      }),
+      this.prisma.softwareLicense.aggregate({
+        where: { tenantId, status: { not: 'retired' }, origin: 'intangibles' },
         _sum: { totalSeats: true },
       }),
       this.prisma.asset.aggregate({
@@ -46,11 +52,15 @@ export class DashboardService {
     ]);
 
     const inactiveLicenses = Number(licenseAgg._sum.totalSeats ?? 0);
+    const intangibleLicenseSeats = Number(
+      intangibleLicenseAgg._sum.totalSeats ?? 0,
+    );
     const inventoryValue = Number(inventoryAgg._sum.currentBookValue ?? 0);
 
     return {
       totalAssets,
       inactiveLicenses,
+      intangibleLicenseSeats,
       ewasteCandidates,
       inventoryValue,
       reporting24h,

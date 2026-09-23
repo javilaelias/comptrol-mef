@@ -29,13 +29,13 @@
 
 ## 5. Licencias desde intangibles (fase 2)
 
-- [ ] 5.0 Migración de la fase 2: `perpetual` en `LicenseType`, `retired` en `LicenseStatus`, columnas `origin`/`origin_key` en `software_licenses` con índice único parcial
+- [x] 5.0 Migración `20260923150000_licenses_from_intangibles`: `perpetual` en `LicenseType`, `retired` en `LicenseStatus`, columnas `origin`/`origin_key` en `software_licenses` con índice único parcial. Probada primero en una copia de `comptrol` (142 licencias manuales intactas)
 
-- [ ] 5.1 `LicensesFromIntangiblesService.regenerate` (agrupación por `origin_key`, upsert `origin='intangibles'`, retirada de grupos sin vigentes, mapeo de `licenseType`/`status`)
-- [ ] 5.2 Llamarlo desde el script de SIGA, la subida del Excel y el cambio de versión vigente; agregar `POST /licenses/regenerate` (super_admin, it_admin)
-- [ ] 5.3 Dashboard: el KPI de licencias excluye `status='retired'` y devuelve `intangibleSeats`; la tarjeta muestra el desglose
-- [ ] 5.4 `GET /licenses` y `GET /licenses/:id/intangibles`
-- [ ] 5.5 Tests: idempotencia (dos corridas iguales), una licencia `origin='manual'` intacta, "MICROSOFT PROJECT PROFESIONAL" → 19 asientos; regresión del KPI del Dashboard. Correrlos solo contra la base local o una copia, nunca contra staging
+- [x] 5.1 `LicensesFromIntangiblesService.regenerate` (agrupación por `origin_key`, upsert `origin='intangibles'`, retirada de grupos sin vigentes, mapeo de `licenseType`/`status`)
+- [x] 5.2 Llamarlo desde el script de SIGA, la subida del Excel y el cambio de versión vigente; agregar `POST /licenses/regenerate` (super_admin, it_admin). `import:docs` ahora borra solo licencias `origin='manual'` (antes, con `IMPORT_RESET` o por nombre, se habría llevado también las de intangibles)
+- [x] 5.3 Dashboard: el KPI de licencias excluye `status='retired'` y devuelve `intangibleSeats`; la tarjeta muestra el desglose
+- [x] 5.4 `GET /licenses` y `GET /licenses/:id/intangibles`
+- [x] 5.5 Tests: idempotencia (dos corridas iguales), una licencia `origin='manual'` intacta, "MICROSOFT PROJECT PROFESIONAL" → 19 asientos; regresión del KPI del Dashboard. Correrlos solo contra la base local o una copia, nunca contra staging
 
 ## 6. Alertas (fase 3)
 
@@ -51,9 +51,9 @@
 - [x] 7.1 `/intangibles`: pestaña Listado (tabla paginada con búsqueda y filtros, fechas de corte visibles, marca de cuenta sospechosa)
 - [x] 7.2 `/intangibles`: botón "Subir Excel" (archivo + fecha de corte sugerida desde el nombre, resultado con advertencias) y pestaña Versiones (historial y "hacer vigente")
 - [x] 7.3 `/intangibles`: pestaña Comparación (seis vistas con conteo, aviso de cortes desfasados, exportar xlsx por vista)
-- [ ] 7.4 `/licenses`: lista con búsqueda y filtro por estado, y detalle con los bienes del grupo
+- [x] 7.4 `/licenses`: lista con búsqueda y filtro por estado, y detalle con los bienes del grupo
 - [ ] 7.5 `/alerts`: bandeja por estado, Atender/Descartar, configuración de reglas (solo admins)
-- [ ] 7.6 `TopNav`: "Intangibles", "Licencias" y "Alertas (n)" con el contador
+- [ ] 7.6 `TopNav`: "Intangibles" y "Licencias" hechos; falta "Alertas (n)" con el contador (fase 3)
 - [ ] 7.7 `tsc --noEmit` limpio en `apps/web` y `apps/api`; lint (fase 1: limpio en los archivos nuevos; `auth.service.spec.ts` y `main.ts` traen errores previos, no introducidos aquí)
 
 ## 8. Verificación y documentación

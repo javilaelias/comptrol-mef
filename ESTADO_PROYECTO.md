@@ -13,7 +13,7 @@ despliegue: `docker-compose.server.yml` (producción, `/home/usr_admin/apps/Comp
 | Carga del patrimonio de SIGA a staging | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/cargar-patrimonio-siga-staging/` |
 | Columnas configurables + origen SIGA en Activos | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/2026-09-23-activos-columnas-configurables-origen-siga/` — spec sincronizado a `openspec/specs/asset-list-configurable-columns/` |
 | Retirar tabs "Apps" y "ENAD" del menú | ✅ Cerrado 2026-09-23 | Ver sección abajo |
-| Intangibles: SIGA vs Excel del coordinador + licencias + alertas | 🟡 Fase 1 de 3 implementada en local (sin commit ni despliegue) 2026-09-23 | `openspec/changes/intangibles-siga-vs-coordinador/` (concilio 5 revisores, APROBADO CON CAMBIOS); guía de uso en `docs/INTANGIBLES.md`. Fase 2 (licencias) y fase 3 (alertas solo en la app, sin correo) pendientes. Reemplaza las alertas de Vencix; el resto de Vencix se migrará en un cambio posterior |
+| Intangibles: SIGA vs Excel del coordinador + licencias + alertas | 🟡 Fases 1 (intangibles) y 2 (licencias) implementadas en local, rama `feat/intangibles`, sin desplegar 2026-09-23 | `openspec/changes/intangibles-siga-vs-coordinador/` (concilio 5 revisores, APROBADO CON CAMBIOS); guía de uso en `docs/INTANGIBLES.md`. Fase 3 (alertas solo en la app, sin correo) pendiente. Decisión abierta: posible doble conteo de licencias manuales vs de intangibles en el KPI del Dashboard. Reemplaza las alertas de Vencix; el resto de Vencix se migrará en un cambio posterior |
 
 ## Retirar "Apps" y "ENAD" del menú (2026-09-23)
 

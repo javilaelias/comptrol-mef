@@ -7,8 +7,16 @@ cargarEnv({ quiet: true });
 cargarEnv({ path: path.resolve(__dirname, '..', '..', 'api', '.env'), quiet: true });
 
 import { PrismaPg } from '@prisma/adapter-pg';
-// El cliente se genera desde el esquema de la API (ver el script import:siga-intangibles del package.json).
-import { Prisma, PrismaClient, IntangibleSource, IntangibleStatus } from '@prisma/client';
+// Igual que import-docs.ts: se usa el cliente generado en apps/api (el de la raíz del repo puede
+// quedar desactualizado respecto del esquema, y la regeneración de licencias usa columnas nuevas).
+import {
+  Prisma,
+  PrismaClient,
+  IntangibleSource,
+  IntangibleStatus,
+} from '../../api/node_modules/@prisma/client';
+// Misma logica que usa la API al subir el Excel (una sola implementacion).
+import { regenerateLicensesFromIntangibles } from '../../api/src/modules/licenses/licenses-from-intangibles';
 
 /**
  * Carga los bienes intangibles de SIGA (licencias y software: grupo 14, clase 04) como una
@@ -173,6 +181,13 @@ async function main() {
       `Version SIGA ${process.env.SIGA_CUT_DATE} creada (${batch.id}): ${registros.length} bienes ` +
         `(${vigentes} vigentes, ${registros.length - vigentes} de baja)` +
         (existente ? ' — reemplazo la version anterior del mismo corte' : ''),
+    );
+
+    // Las licencias agrupadas desde intangibles se recalculan con la version nueva.
+    const licencias = await regenerateLicensesFromIntangibles(prisma, tenant.id);
+    console.log(
+      `Licencias desde intangibles: ${licencias.groups} grupos ` +
+        `(${licencias.created} nuevas, ${licencias.updated} actualizadas, ${licencias.retired} retiradas)`,
     );
   } finally {
     await siga.end();

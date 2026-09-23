@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { IntangibleSource, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { LicensesService } from '../licenses/licenses.service';
 import {
   CoordinatorExcelError,
   parseCoordinatorExcel,
@@ -31,7 +32,10 @@ const XLSX_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 
 @Injectable()
 export class IntangiblesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly licenses: LicensesService,
+  ) {}
 
   async listBatches(tenantId: string) {
     const batches = await this.prisma.intangibleBatch.findMany({
@@ -166,6 +170,11 @@ export class IntangiblesService {
       discarded: parsed.discarded,
       warningCount: parsed.warnings.length,
       warnings: parsed.warnings.slice(0, 200),
+      licenses: await this.licenses.regenerateSafely(
+        tenantId,
+        actorUserId,
+        'coordinator_upload',
+      ),
     };
   }
 
@@ -197,7 +206,14 @@ export class IntangiblesService {
         },
       }),
     ]);
-    return { ok: true };
+    return {
+      ok: true,
+      licenses: await this.licenses.regenerateSafely(
+        tenantId,
+        actorUserId,
+        'make_current',
+      ),
+    };
   }
 
   async list(tenantId: string, f: IntangibleListFilters) {

@@ -72,6 +72,31 @@ Arriba a la derecha se ven siempre las **fechas de corte** en uso de cada fuente
 - Se pueden subir varias versiones con la misma fecha de corte ("version 1", "version 2").
 - Cada subida queda registrada en la auditoría (quién, archivo y filas).
 
+## Licencias
+
+La pantalla **Licencias** muestra las licencias de software de dos orígenes:
+
+- **Intangibles:** se calculan solas agrupando los bienes vigentes por descripción. Por ejemplo,
+  los 19 bienes "LICENCIA DE MICROSOFT PROJECT PROFESIONAL" forman una licencia de 19 asientos.
+  - La **próxima renovación** es la fecha de vencimiento más cercana que puso el coordinador.
+  - El **estado** es *vigente*, *por vencer* (90 días), *vencida*, o *retirada* si ya no le quedan
+    bienes vigentes.
+  - El **tipo** es *perpetua* si la mayoría de los bienes tiene vida útil indefinida; si no, es
+    *suscripción*.
+  - Se recalculan con cada carga de SIGA, cada subida del Excel y cada cambio de versión vigente.
+- **Manual:** las cargadas antes desde la "Relación de Licencias y aplicativos" (import:docs). No se
+  tocan.
+
+Al hacer clic en una licencia de intangibles se ven sus bienes (código, OC, condición, vencimiento
+y valor).
+
+El KPI **"Licencias registradas (total)"** del Dashboard suma los asientos de todas las licencias
+no retiradas, e indica cuántos vienen de intangibles.
+
+**Ojo con el doble conteo:** algunas licencias pueden aparecer en los dos orígenes con nombres
+distintos (por ejemplo, "MS Project Professional" manual y "LICENCIA DE MICROSOFT PROJECT
+PROFESIONAL" de intangibles). Hoy el KPI suma ambas.
+
 ## Cargar un corte nuevo de SIGA
 
 La carga de SIGA se hace por script, porque el dump pesa varios GB:
@@ -83,6 +108,7 @@ SIGA_DATABASE_URL=postgresql://… SIGA_CUT_DATE=2026-07-15 npm run import:siga-
 - `SIGA_CUT_DATE` es obligatorio (fecha de corte del dump).
 - Repetir un corte que ya existe falla, salvo que se agregue `SIGA_REPLACE=1`.
 - No toca la tabla de activos (equipos).
+- Al terminar, recalcula las licencias que vienen de intangibles.
 
 **¿Cuándo pedir un corte nuevo de SIGA?** Cuando el Excel del coordinador sea más reciente que el
 último corte de SIGA. La pantalla lo avisa con un recuadro amarillo, porque en ese caso "Solo en

@@ -69,6 +69,7 @@ enum LicenseType {
   concurrent
   subscription
   enterprise
+  perpetual
 }
 
 enum LicenseStatus {
@@ -76,6 +77,7 @@ enum LicenseStatus {
   expiring
   expired
   suspended
+  retired
 }
 
 model Tenant {
@@ -380,12 +382,17 @@ model SoftwareLicense {
   renewalDate    DateTime?     @map("renewal_date") @db.Date
   autoRenew      Boolean       @default(false) @map("auto_renew")
   status         LicenseStatus @default(active)
+  /// De dónde viene la fila: 'manual' (seed, import:docs) o 'intangibles' (agrupación de intangibles).
+  origin         String        @default("manual") @db.VarChar(30)
+  /// Clave del grupo cuando origin = 'intangibles' (descripción normalizada).
+  originKey      String?       @map("origin_key") @db.VarChar(300)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, status])
+  @@index([tenantId, origin])
   @@map("software_licenses")
 }
 
