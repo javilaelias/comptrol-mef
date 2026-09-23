@@ -11,7 +11,7 @@ despliegue: `docker-compose.server.yml` (producción, `/home/usr_admin/apps/Comp
 |---|---|---|
 | SSO real + rol dedicado (`ROLE_COMPTROL`) | ✅ Cerrado 2026-09-22 | Ver `registro/gti-app.md` de JuvinFactory — implementado en el repo de `gti-app`, no en este |
 | Carga del patrimonio de SIGA a staging | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/cargar-patrimonio-siga-staging/` |
-| Columnas configurables + origen SIGA en Activos | 🟡 Desplegado a staging, falta verificación visual del usuario | `openspec/changes/activos-columnas-configurables-origen-siga/` (sin archivar todavía) |
+| Columnas configurables + origen SIGA en Activos | ✅ Cerrado 2026-09-23 | `openspec/changes/archive/2026-09-23-activos-columnas-configurables-origen-siga/` — spec sincronizado a `openspec/specs/asset-list-configurable-columns/` |
 | Retirar tabs "Apps" y "ENAD" del menú | ✅ Cerrado 2026-09-23 | Ver sección abajo |
 
 ## Retirar "Apps" y "ENAD" del menú (2026-09-23)
@@ -98,7 +98,6 @@ despliegues anteriores. `.env.docker` verificado intacto por checksum antes/desp
 contenedores (`comptrol-postgres`, `comptrol-api`, `comptrol-web`) quedaron `healthy`, `curl -I`
 a `comptrol-web` responde 307 (redirect a login, igual que antes del cambio).
 
-**Pendiente, no cubierto por esta sesión:** verificación visual en navegador real (esta sesión no
-tiene acceso a un navegador interactivo) — falta confirmar que el selector, el scroll horizontal
-y el badge se ven y funcionan como se espera, esta vez con la sesión propia del usuario en
-staging. **El cambio OpenSpec sigue abierto (no archivado) hasta esa confirmación.**
+**Confirmado por el usuario 2026-09-23** desde su propia sesión en staging: selector de
+columnas, scroll horizontal y badge "Importado de SIGA" se ven y funcionan. Cambio archivado,
+spec sincronizado a `openspec/specs/asset-list-configurable-columns/spec.md`.

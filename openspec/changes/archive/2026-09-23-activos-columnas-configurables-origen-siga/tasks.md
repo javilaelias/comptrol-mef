@@ -42,11 +42,9 @@
 - [x] 5.1 `npm run build` del workspace `web`: **compiló limpio**, `/assets` y `/assets/[id]`
       generados sin errores nuevos (`tsc --noEmit` también limpio). `flutter analyze` no aplica
       (este repo es Next.js, no Flutter).
-- [ ] 5.2 **Pendiente, no cubierto por esta sesión:** verificación visual en navegador real (clic
-      en el selector, scroll horizontal, badge visible) — esta sesión no tiene acceso a un
-      navegador interactivo. Recomendado: usuario verifica en local (`npm run dev` en `apps/web`
-      + `apps/api`) o en staging cuando se despliegue.
+- [x] 5.2 Verificación visual en navegador real. **Confirmado por el usuario 2026-09-23** desde
+      su propia sesión en staging: selector de columnas, scroll horizontal y badge "Importado de
+      SIGA" se ven y funcionan.
 - [x] 5.3 Actualizar `ESTADO_PROYECTO.md` con el cierre de este bloque.
-- [ ] 5.4 Commit (sin push automático — confirmar con el usuario antes de pushear, mismo criterio
-      que el resto de la sesión).
-- [ ] 5.5 Archivar el cambio (`openspec archive`) tras QA.
+- [x] 5.4 Commit y push (`970f561`, autorizado explícitamente por el usuario 2026-09-23).
+- [x] 5.5 Archivar el cambio (`openspec archive`).
