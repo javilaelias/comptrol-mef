@@ -7,6 +7,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: comptrol
+    ports:
+      # Solo loopback del servidor -- nunca 0.0.0.0. Acceso real solo vía tunel SSH
+      # (ver openspec/changes/cargar-patrimonio-siga-staging/design.md, D1).
+      - "127.0.0.1:5436:5432"
     volumes:
       - comptrol_pgdata:/var/lib/postgresql/data
     healthcheck:
