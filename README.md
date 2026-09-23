@@ -97,6 +97,48 @@ set IMPORT_RESET=1 && npm run import:enad
 
 Nota: el PDF no expone qué checkbox está marcado como texto. Por eso las preguntas 10 (personal) y 11 (teletrabajo) se completan desde la web en `http://localhost:3000/enad`.
 
+## Importar el patrimonio de SIGA
+
+> Para los usuarios de la app: las tres decisiones de esta importación que cambian lo que se ve (solo equipos de TI, responsables como usuarios inactivos, periféricos con tipo `other`) están explicadas en [docs/IMPORTACION_SIGA.md](docs/IMPORTACION_SIGA.md).
+
+Los dumps de SIGA llegan a `docs/siga_<ddmmaa>/` como export de Oracle 10g. Para dejarlos en PostgreSQL están los scripts numerados de `docs/siga_150726/migracion/`. Con la base ya cargada (por defecto `siga15072026`), este job vuelca el patrimonio al inventario:
+
+```bash
+npm run import:siga
+```
+
+La conexión se configura con `SIGA_DATABASE_URL` en `apps/api/.env`. El job empareja por código patrimonial: `sig_patrimonio.codigo_activo` es el `assetTag` de Comptrol, así que **los activos que ya existen se actualizan y los que faltan se crean**. Cada activo importado queda marcado con `fingerprint = siga:<sec_ejec>-<modalidad>-<secuencia>`.
+
+Qué trae de SIGA:
+
+| Comptrol | SIGA |
+|---|---|
+| `assetTag` / `inventoryCode` | `codigo_activo` / `codigo_barra` |
+| `description`, `serialNumber`, `model` | `descripcion`, `nro_serie`, `modelo` |
+| `vendor` | `marca.nombre` |
+| `assetType` | se deduce de la descripción y del catálogo de bienes |
+| `status` | `estado` = 2 (baja) → `retired`; `estado_actual` = S → `in_use`; resto → `in_stock` |
+| `conditionLabel` | `mp_estado` (Bueno, Regular, Malo, Muy Malo, Nuevo, Chatarra, RAEE) |
+| `purchaseDate`, `purchaseCost`, `warrantyEndDate` | `fecha_compra`, `valor_compra`, `fecha_garantia_fin` |
+| `currentBookValue` | `valor_inicial` − `valor_deprec` |
+| `orgUnit` | `sig_centro_costo.nombre_depend` |
+| `location` / `site` | `sig_ubicac_fisica` / `tmp_sede` |
+| `owner` | `sig_personal`, creado como usuario inactivo (`siga-<codigo>@siga.local`) |
+
+Variables opcionales:
+
+| Variable | Por defecto | Efecto |
+|---|---|---|
+| `SIGA_SOLO_TI` | `1` | Solo cómputo (grupo 74, clase 08) y telecomunicaciones (95/22). Con `0` importa todo el patrimonio. |
+| `SIGA_INCLUIR_BAJAS` | `1` | Incluye los bienes dados de baja, con estado `retired`. |
+| `SIGA_CREAR_USUARIOS` | `1` | Crea los responsables como usuarios inactivos para poder asignar el activo. |
+| `SIGA_DRY_RUN` | `0` | Simula y muestra el resumen sin escribir nada. |
+| `SIGA_LIMIT` | — | Limita las filas leídas (pruebas). |
+
+Las series ilegibles de SIGA (`S/S`, `ILEGIBLE`, `INACCESIBLE`) y las repetidas se guardan como vacías, porque Comptrol exige serie única.
+
+Dependencias y ubicaciones se reconocen por nombre sin importar tildes, mayúsculas ni espacios ("DIRECCION" de SIGA y "DIRECCIÓN" del Excel son la misma). Se reutiliza la más antigua y, al final, el job elimina las repetidas que quedaron sin equipos.
+
 ## Ejecutar (desarrollo)
 ```bash
 npm run dev

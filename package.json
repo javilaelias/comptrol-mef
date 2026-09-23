@@ -17,6 +17,7 @@
     "migrate": "npm run db:migrate",
     "seed": "npm run db:seed",
     "import:docs": "npm --workspace apps/importer run import:docs",
+    "import:siga": "npm --workspace apps/importer run import:siga",
     "import:enad": "npm --workspace apps/api run import:enad",
     "start": "npm run dev",
     "build": "npm --workspace apps/api run build && npm --workspace apps/web run build",

@@ -7,7 +7,8 @@
     "schema": "../api/prisma/schema.prisma"
   },
   "scripts": {
-    "import:docs": "prisma generate --schema ../api/prisma/schema.prisma && ts-node --transpile-only scripts/import-docs.ts"
+    "import:docs": "prisma generate --schema ../api/prisma/schema.prisma && ts-node --transpile-only scripts/import-docs.ts",
+    "import:siga": "prisma generate --schema ../api/prisma/schema.prisma && ts-node --transpile-only scripts/import-siga.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
