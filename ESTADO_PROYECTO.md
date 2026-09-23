@@ -44,8 +44,11 @@ Versiones y subida, y confirmar que ve lo mismo que en local.
   (18 GB libres), así que no bloqueó el despliegue, pero hay que limpiar `/`. Docker también reporta
   ~10 GB de imágenes y ~4.9 GB de caché de build recuperables (en `/var`).
 - Las 3 licencias "manuales" del servidor (Microsoft 365 3,500; Antivirus EDR 3,200; Adobe Acrobat
-  500) parecen **datos de demo del seed**, y ya generan 3 alertas (una vencida el 07/09/2026).
-  Confirmar con el usuario si se borran.
+  500) eran **datos de demo del seed** (mismo `created_at`, fabricante "Vendor EDR") y generaban 3
+  alertas. **Borradas a pedido del usuario el 2026-09-23**, junto con sus 3 alertas, en una
+  transacción con verificación de conteos y registro en `audit_logs`. Copia de las filas en
+  `D:\MV\Comptrol-MEF-respaldos\staging-{licencias,alertas}-demo-borradas-20260923.csv`. El seed
+  no las recrea (sale antes si hay activos). Quedan solo las 196 licencias desde intangibles.
 - El `docker-compose.server.yml` del servidor sigue distinto del repo (deuda ya registrada abajo).
 
 ## Retirar "Apps" y "ENAD" del menú (2026-09-23)
