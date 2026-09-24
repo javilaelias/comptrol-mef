@@ -14,4 +14,4 @@
 
 ## 5. QA y despliegue
 - [x] 5.1 Lint + tests + build; smoke local de la pestaña
-- [ ] 5.2 (C4) Staging: `pg_dump` de tablas `intangible_*` y licencias, deploy, `prisma migrate deploy`, recarga SIGA por túnel, verificación de conteos y de que licencias/alertas no cambian
+- [x] 5.2 (C4) Staging: `pg_dump` de tablas `intangible_*` y licencias, deploy, `prisma migrate deploy`, recarga SIGA por túnel, verificación de conteos y de que licencias/alertas no cambian

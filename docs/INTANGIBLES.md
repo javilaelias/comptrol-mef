@@ -24,6 +24,22 @@ Los intangibles **no** aparecen en "Activos" ni cambian los números del Dashboa
 
 Arriba a la derecha se ven siempre las **fechas de corte** en uso de cada fuente.
 
+## Pestaña "Sin condición: datos SIGA"
+
+Los bienes vigentes que el Excel tiene **sin condición**, con lo que SIGA sabe de ellos, para
+completarlos. Se puede filtrar, buscar y exportar (incluye la fila del Excel).
+
+- **Fin de vida útil (SIGA)**: fecha contable (alta + años de vida útil). SIGA no guarda el
+  vencimiento de la licencia (`fecha_garantia_fin` viene vacía).
+- **Orden verificada**: la orden de SIGA de ese número, del año de compra o el anterior, contiene
+  el mismo ítem de catálogo del bien. Se muestran tipo (OC/OS), fecha y objeto.
+- **No verificada**: SIGA registra un N° de orden, pero la orden con ese número es de otra cosa
+  (ej. `140400030005` → OC 553-2013 es de cableado). Revisar a mano.
+- **Sin orden (NEA)**: el bien ingresó por Nota de Entrada de Almacén.
+
+Con los cortes actuales: 932 bienes; 916 con fin de vida útil; 548 verificadas, 35 no
+verificadas, 349 por NEA. Los datos se cargan con `import:siga-intangibles`.
+
 ## Qué significa cada vista de la comparación
 
 | Vista | Qué muestra | Qué hacer |
