@@ -1,14 +1,14 @@
 {
     "version":  1,
     "nombre":  "Comptrol-MEF",
-    "descripcion":  "ITAM/CMDB del MEF, integrado al portal OPDA Apps con SSO real (ticket firmado) y rol dedicado ROLE_COMPTROL",
+    "descripcion":  "ITAM/CMDB del MEF, integrado al portal OPDA Apps con SSO real y rol ROLE_COMPTROL; modulo Intangibles SIGA vs Excel del coordinador",
     "ambito":  "institucional",
     "maquina_duena":  "AIO-1090",
     "replicar":  false,
     "origen_mef":  true,
     "clonado":  true,
     "clon_de":  null,
-    "actualizado":  "2026-09-23T17:42:06.5449626Z",
+    "actualizado":  "2026-09-24T17:14:23.9698892Z",
     "fabrica":  "JuvinFactory",
     "estado_desarrollo":  "v1_0",
     "despliegue":  "institucional"
