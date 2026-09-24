@@ -25,4 +25,4 @@
 - [x] 7.1 Columna `po_detail` JSONB + migración `20260924130000_intangibles_po_detail`
 - [x] 7.2 Importador: cabecera + proveedor + ítems de las órdenes verificadas (una consulta por lote)
 - [x] 7.3 Web: fila expandible con la orden (C6 rótulo "reconstruida", C7 montos con moneda, C8 sin `estado`)
-- [ ] 7.4 (C9) Verificar OC 1-2014 = S/ 84,096.44 y aviso en 140400030005; desplegar con respaldo y recargar SIGA
+- [x] 7.4 (C9) Verificar OC 1-2014 = S/ 84,096.44 y aviso en 140400030005; desplegar con respaldo y recargar SIGA

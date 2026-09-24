@@ -36,6 +36,11 @@ completarlos. Se puede filtrar, buscar y exportar (incluye la fila del Excel).
 - **No verificada**: SIGA registra un N° de orden, pero la orden con ese número es de otra cosa
   (ej. `140400030005` → OC 553-2013 es de cableado). Revisar a mano.
 - **Sin orden (NEA)**: el bien ingresó por Nota de Entrada de Almacén.
+- **Situación**: *No perpetuo* si el fin de vida útil ya pasó, *Vigente* si todavía no llega,
+  *Perpetua* si SIGA no tiene fecha.
+- **Clic en una fila**: muestra la orden reconstruida desde SIGA (fecha, proveedor y RUC, contrato,
+  concepto, ítems y totales). No es el documento firmado: SIGA no lo guarda. Solo en órdenes
+  verificadas; en las demás explica por qué no hay orden.
 
 Con los cortes actuales: 932 bienes; 916 con fin de vida útil; 548 verificadas, 35 no
 verificadas, 349 por NEA. Los datos se cargan con `import:siga-intangibles`.
