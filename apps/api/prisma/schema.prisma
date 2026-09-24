@@ -484,6 +484,13 @@ model IntangibleRecord {
   hr               String?           @db.Text
   document         String?           @db.Text
   raw              Json?             @db.JsonB
+  // Solo en la versión SIGA: fin de vida útil contable, tipo de ingreso y la orden verificada por ítem.
+  endOfLifeAt      DateTime?         @map("end_of_life_at") @db.Date
+  entryDoc         String?           @map("entry_doc") @db.VarChar(150)
+  poKind           String?           @map("po_kind") @db.VarChar(2)
+  poDate           DateTime?         @map("po_date") @db.Date
+  poSubject        String?           @map("po_subject") @db.Text
+  poVerified       Boolean?          @map("po_verified")
 
   batch IntangibleBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 

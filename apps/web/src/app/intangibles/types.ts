@@ -53,6 +53,7 @@ export type ReconciliationSummary = {
     poCountsWithDifference: number;
     pending: { noCondition: number; definedNoExpiry: number };
     expiry: { expired: number; expiring: number; valid: number };
+    noConditionSiga: { verified: number; unverified: number; noOrder: number; withEndOfLife: number };
     suspiciousAccount: number;
   };
 };

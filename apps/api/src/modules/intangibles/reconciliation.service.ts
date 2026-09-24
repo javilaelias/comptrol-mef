@@ -18,12 +18,14 @@ export const RECONCILIATION_VIEWS = [
   'po-counts',
   'pending',
   'expiry',
+  'no-condition-siga',
 ] as const;
 export type ReconciliationView = (typeof RECONCILIATION_VIEWS)[number];
 
 export type ViewFilters = {
   search?: string;
-  /** only-siga: active | retired · pending: no_condition | defined_no_expiry · expiry: expired | expiring | valid */
+  /** only-siga: active | retired · pending: no_condition | defined_no_expiry · expiry: expired | expiring | valid
+   *  · no-condition-siga: verified | unverified | no_order */
   subset?: string;
   suspicious?: boolean;
   /** po-counts: solo las OC con diferencia */
@@ -88,6 +90,22 @@ const EXPORT_COLUMNS: Record<
     ['supplier', 'Proveedor (Excel)'],
     ['account_flag', 'Observación de cuenta'],
   ],
+  'no-condition-siga': [
+    ['code', 'Código patrimonial'],
+    ['description', 'Descripción (Excel)'],
+    ['row_number', 'Fila del Excel'],
+    ['end_of_life_at', 'Fin de vida útil (SIGA)'],
+    ['entry_doc', 'Tipo de ingreso (SIGA)'],
+    ['po_number', 'N° de orden (SIGA)'],
+    ['po_kind', 'Tipo de orden'],
+    ['po_date', 'Fecha de la orden'],
+    ['po_subject', 'Objeto de la orden'],
+    ['po_status_label', 'Situación de la orden'],
+    ['contract', 'N° de contrato (SIGA)'],
+    ['supplier', 'Proveedor (SIGA)'],
+    ['registered_at', 'Fecha de alta (SIGA)'],
+    ['account_flag', 'Observación de cuenta'],
+  ],
 };
 
 const VIEW_TITLES: Record<ReconciliationView, string> = {
@@ -97,7 +115,18 @@ const VIEW_TITLES: Record<ReconciliationView, string> = {
   'po-counts': 'Cantidades por OC',
   pending: 'Pendientes del coordinador',
   expiry: 'Vencimientos',
+  'no-condition-siga': 'Sin condición: datos SIGA',
 };
+
+export const PO_STATUS_LABELS: Record<string, string> = {
+  verified: 'Verificada',
+  unverified: 'No verificada (el N° de SIGA no corresponde a este bien)',
+  no_order: 'Sin orden (ingreso por NEA)',
+};
+
+/** Situación de la orden de SIGA de un bien: verificada por ítem, número sin verificar o sin orden. */
+const poStatusSql = Prisma.sql`CASE WHEN s.po_verified THEN 'verified'
+  WHEN s.po_verified = false THEN 'unverified' ELSE 'no_order' END`;
 
 export const SUSPICIOUS_ACCOUNT_TEXT =
   'Posible error de cuenta: intangible registrado como mueble no depreciable';
@@ -137,6 +166,16 @@ export class ReconciliationService {
           WHERE COALESCE(s.status::text, 'active') = 'active' AND c.condition_norm = 'VIDA ÚTIL DEFINIDA' AND c.expires_at IS NULL)::int AS pending_defined_no_expiry,
         (SELECT count(*) FROM c WHERE ${suspiciousAccountSql})::int AS suspicious_account`;
 
+    const [noConditionSiga] = await this.prisma.$queryRaw<Row[]>`
+      ${currentRecordsCte(tenantId)}
+      SELECT count(*) FILTER (WHERE st = 'verified')::int AS verified,
+             count(*) FILTER (WHERE st = 'unverified')::int AS unverified,
+             count(*) FILTER (WHERE st = 'no_order')::int AS no_order,
+             count(eol)::int AS with_end_of_life
+        FROM (SELECT ${poStatusSql} AS st, s.end_of_life_at AS eol
+                FROM c JOIN s ON s.patrimonial_code = c.patrimonial_code
+               WHERE s.status = 'active' AND c.condition_norm IS NULL) t`;
+
     const [expiry] = await this.prisma.$queryRaw<Row[]>`
       ${currentRecordsCte(tenantId)}
       SELECT count(*) FILTER (WHERE b = 'expired')::int AS expired,
@@ -167,6 +206,12 @@ export class ReconciliationService {
           definedNoExpiry: counts.pending_defined_no_expiry,
         },
         expiry,
+        noConditionSiga: {
+          verified: noConditionSiga.verified,
+          unverified: noConditionSiga.unverified,
+          noOrder: noConditionSiga.no_order,
+          withEndOfLife: noConditionSiga.with_end_of_life,
+        },
         suspiciousAccount: counts.suspicious_account,
       },
     };
@@ -186,6 +231,8 @@ export class ReconciliationService {
         return this.pending(tenantId, f);
       case 'expiry':
         return this.expiry(tenantId, f);
+      case 'no-condition-siga':
+        return this.noConditionSiga(tenantId, f);
     }
   }
 
@@ -329,6 +376,34 @@ export class ReconciliationService {
     return result;
   }
 
+  /**
+   * Bienes vigentes sin condición en el Excel, con lo que SIGA sabe de ellos: fin de vida útil
+   * contable y la orden de compra/servicio (solo con fecha y objeto si se verificó por ítem).
+   */
+  private async noConditionSiga(tenantId: string, f: ViewFilters) {
+    const status = ['verified', 'unverified', 'no_order'].includes(f.subset ?? '')
+      ? f.subset!
+      : null;
+    const rows = await this.prisma.$queryRaw<Row[]>`
+      ${currentRecordsCte(tenantId)}
+      SELECT *, count(*) OVER ()::int AS total FROM (
+        SELECT c.patrimonial_code AS code, c.description, c.row_number,
+               to_char(s.end_of_life_at, 'YYYY-MM-DD') AS end_of_life_at, s.entry_doc,
+               s.po_number, s.po_kind, to_char(s.po_date, 'YYYY-MM-DD') AS po_date, s.po_subject,
+               ${poStatusSql} AS po_status, s.contract_number AS contract, s.supplier_name AS supplier,
+               to_char(s.registered_at, 'YYYY-MM-DD') AS registered_at,
+               ${suspiciousAccountSql} AS suspicious_account
+          FROM c JOIN s ON s.patrimonial_code = c.patrimonial_code
+         WHERE s.status = 'active' AND c.condition_norm IS NULL
+      ) n
+       WHERE (${status}::text IS NULL OR n.po_status = ${status})
+         AND (${!!f.suspicious} = false OR n.suspicious_account)
+         AND ${this.searchSql(f, Prisma.sql`n.code`, Prisma.sql`n.description`)}
+       ORDER BY n.row_number
+       LIMIT ${f.take} OFFSET ${f.skip}`;
+    return paged(rows);
+  }
+
   async export(
     tenantId: string,
     view: ReconciliationView,
@@ -389,6 +464,7 @@ export class ReconciliationService {
       rows = rows.map((r) => ({
         ...r,
         bucket_label: bucketLabel[String(r.bucket)] ?? null,
+        po_status_label: PO_STATUS_LABELS[String(r.po_status)] ?? null,
       }));
     }
 

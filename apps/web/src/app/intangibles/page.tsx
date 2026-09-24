@@ -8,6 +8,7 @@ import { getErrorMessage, getErrorStatus } from '@/lib/errors';
 import { useRequireAuth } from '@/lib/requireAuth';
 import { TopNav } from '@/components/TopNav';
 import { ListTab } from './ListTab';
+import { NoConditionSigaTab } from './NoConditionSigaTab';
 import { ReconciliationTab } from './ReconciliationTab';
 import { VersionsTab } from './VersionsTab';
 import { formatDate, type ReconciliationSummary } from './types';
@@ -16,6 +17,7 @@ import { ErrorBox } from './ui';
 const TABS = [
   { key: 'list', label: 'Listado' },
   { key: 'reconciliation', label: 'Comparación SIGA vs Excel' },
+  { key: 'no-condition-siga', label: 'Sin condición: datos SIGA' },
   { key: 'versions', label: 'Versiones y subida' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
@@ -111,6 +113,7 @@ export default function IntangiblesPage() {
 
           {tab === 'list' && <ListTab onError={handleError} />}
           {tab === 'reconciliation' && <ReconciliationTab summary={summary} onError={handleError} />}
+          {tab === 'no-condition-siga' && <NoConditionSigaTab summary={summary} onError={handleError} />}
           {tab === 'versions' && <VersionsTab onError={handleError} onChanged={loadSummary} />}
         </section>
       </div>

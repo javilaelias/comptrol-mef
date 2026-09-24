@@ -47,13 +47,20 @@ type FilaSiga = {
   sede_nombre: string | null;
   nombre_depend: string | null;
   ubicac_fisica: string | null;
+  fec_fin_vida: Date | null;
+  entry_doc: string | null;
+  po_tipo_bien: string | null;
+  po_fecha: Date | null;
+  po_concepto: string | null;
 };
 
 const CONSULTA = `
   SELECT p.codigo_activo, p.codigo_barra, p.descripcion, p.modelo, mk.nombre AS marca_nombre,
          p.estado, p.nro_orden, ct.nombre_prov, ct.nro_ruc, p.nro_contrato,
          p.fecha_alta, p.valor_inicial,
-         sd.nombre AS sede_nombre, cc.nombre_depend, ub.ubicac_fisica
+         sd.nombre AS sede_nombre, cc.nombre_depend, ub.ubicac_fisica,
+         p.fec_fin_vida, md.nombre AS entry_doc,
+         oc.tipo_bien AS po_tipo_bien, oc.fecha_orden AS po_fecha, oc.concepto AS po_concepto
     FROM sig_patrimonio p
     LEFT JOIN LATERAL (
            SELECT m.nombre FROM marca m
@@ -71,6 +78,23 @@ const CONSULTA = `
             LIMIT 1) cc ON TRUE
     LEFT JOIN tmp_sede sd ON sd.sec_ejec = p.sec_ejec AND sd.sede_id = p.sede
     LEFT JOIN sig_ubicac_fisica ub ON ub.tipo_ubicac = p.tipo_ubicac AND ub.cod_ubicac = p.cod_ubicac
+    LEFT JOIN maestro_documento md ON md.cod_doc = p.tipo_doc_refer
+    -- SIGA no guarda el año de la orden: solo se acepta una orden de ese número, del año de compra
+    -- o el anterior, que contenga el mismo ítem de catálogo. El cruce solo por número trae órdenes
+    -- de otra cosa (ej. 140400030005 → OC 553-2013 es de cableado).
+    LEFT JOIN LATERAL (
+           SELECT o.tipo_bien, o.fecha_orden, o.concepto FROM sig_orden_adquisicion o
+            WHERE o.sec_ejec = p.sec_ejec AND o.nro_orden = p.nro_orden AND o.tipo_bien IN ('B', 'S')
+              AND o.ano_eje BETWEEN extract(year FROM COALESCE(p.fecha_compra, p.fecha_alta)) - 1
+                                AND extract(year FROM COALESCE(p.fecha_compra, p.fecha_alta))
+              AND EXISTS (
+                    SELECT 1 FROM sig_orden_item i
+                     WHERE i.ano_eje = o.ano_eje AND i.sec_ejec = o.sec_ejec AND i.nro_orden = o.nro_orden
+                       AND i.tipo_bien = o.tipo_bien AND i.tipo_ppto = o.tipo_ppto
+                       AND i.grupo_bien = p.grupo_bien AND i.clase_bien = p.clase_bien
+                       AND i.familia_bien = p.familia_bien AND i.item_bien = p.item_bien)
+            ORDER BY abs(extract(epoch FROM COALESCE(p.fecha_compra, p.fecha_alta) - o.fecha_orden))
+            LIMIT 1) oc ON COALESCE(p.nro_orden, 0) <> 0
    WHERE p.sec_ejec = $1 AND p.grupo_bien = '14' AND p.clase_bien = '04'
      AND p.codigo_activo IS NOT NULL
    ORDER BY p.codigo_activo`;
@@ -146,6 +170,12 @@ async function main() {
         siteName: texto(r.sede_nombre, 160),
         orgUnit: texto(r.nombre_depend, 250),
         physicalLocation: texto(r.ubicac_fisica, 300),
+        endOfLifeAt: r.fec_fin_vida,
+        entryDoc: texto(r.entry_doc, 150),
+        poKind: r.po_tipo_bien === 'B' ? 'OC' : r.po_tipo_bien === 'S' ? 'OS' : null,
+        poDate: r.po_fecha,
+        poSubject: texto(r.po_concepto, 2000),
+        poVerified: r.nro_orden ? r.po_tipo_bien !== null : null,
       };
     });
 

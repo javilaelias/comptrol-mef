@@ -1,0 +1,41 @@
+# Concilio — intangibles-sin-condicion-datos-siga (2026-09-24)
+
+Profundidad: **5 revisores** (agrega columnas a `intangible_records`, tabla compartida por el
+listado, licencias y alertas). Verificado contra el código real y contra `siga15072026`.
+
+## Arquitectura
+- **Software — APROBADO.** El controlador ya es genérico (`reconciliation/:view` y
+  `reconciliation/:view/export` validan con `assertView`): basta sumar la vista a
+  `RECONCILIATION_VIEWS` y a `EXPORT_COLUMNS`. `currentRecordsCte` usa `SELECT r.*`, así que las
+  columnas nuevas llegan solas a `s`. Nadie tiene FK a `intangible_records` (solo cascada desde
+  `intangible_batches`): el reemplazo del corte SIGA no rompe licencias ni alertas.
+- **Solución — APROBADO.** Staging no alcanza la base SIGA (vive en esta PC), así que el dato
+  tiene que persistirse al importar; el camino (importador local + túnel 5437) ya está probado.
+  Migración aditiva de columnas nulas, sin backfill: reversible con `DROP COLUMN`.
+
+## Reutilización — APROBADO
+Reusar `paged`, `currentRecordsCte`, `safeCell`, `Pager`, `inputClass`, `buttonClass`,
+`apiDownload`, `formatDate`. Sin endpoint nuevo.
+
+## Producto/UX — APROBADO CON CAMBIOS
+- C1. La exportación debe incluir la **fila del Excel** y la descripción, para que el coordinador
+  ubique el bien.
+- C2. Rotular "Fin de vida útil (SIGA)" y explicar en la ayuda que es la fecha contable
+  (alta + vida útil), no el vencimiento de la licencia.
+- C3. Conteos por situación en el filtro (verificada / no verificada / NEA).
+
+## Riesgo/QA — APROBADO CON CAMBIOS
+- Mayor riesgo: **mostrar una orden equivocada** (el cruce solo por número falla, caso
+  `140400030005` → OC 553-2013 de cableado). Mitigación: solo se llenan fecha/objeto/tipo cuando
+  el ítem de catálogo coincide; si no, "No verificada".
+- C4. Antes de recargar SIGA en staging: `pg_dump` de `intangible_batches`/`intangible_records`/
+  licencias; comparar después cantidad de licencias y alertas (no deben cambiar).
+- C5. Verificar los números esperados en local antes de staging (916 / 548 / 35 / 349).
+
+## Simplicidad — APROBADO
+Se evaluó guardar los datos en `raw` (JSONB) para evitar la migración; se prefieren columnas
+tipadas porque la migración es trivial y el patrón de despliegue ya la contempla.
+
+## Veredicto: **APROBADO CON CAMBIOS** (C1–C5 aplicados a `tasks.md`)
+Sin ADR (patrón existente, cambio aditivo). Estándar i18n/tema: el módulo Intangibles es solo ES
+hoy; la pestaña sigue el patrón del módulo (sin barrido retroactivo).
