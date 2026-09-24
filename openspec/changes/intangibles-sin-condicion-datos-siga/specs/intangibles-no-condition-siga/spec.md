@@ -21,3 +21,12 @@ proveedor y la situación de la orden. SHALL poder exportarse a Excel.
 #### Scenario: Fecha de vencimiento
 - **WHEN** SIGA tiene `fec_fin_vida`
 - **THEN** se muestra rotulada "Fin de vida útil (SIGA)", distinta de la fecha de vencimiento del Excel
+
+### Requirement: Situación según el fin de vida útil
+La columna "Situación" SHALL mostrar "No perpetuo" si el fin de vida útil de SIGA ya pasó,
+"Perpetua" si SIGA no tiene fecha y "Vigente" si la fecha es futura. La situación de la orden SHALL
+mostrarse en una columna aparte. Ambas SHALL poder filtrarse a la vez.
+
+#### Scenario: Bien vencido
+- **WHEN** el bien `140400030005` tiene fin de vida útil 26/12/2017
+- **THEN** su Situación es "No perpetuo" y su Orden "No verificada"

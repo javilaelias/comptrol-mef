@@ -10,6 +10,12 @@ const VIEW = 'no-condition-siga';
 
 const str = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
 
+const LIFE: Record<string, { label: string; className: string }> = {
+  not_perpetual: { label: 'No perpetuo', className: 'text-rose-700' },
+  valid: { label: 'Vigente', className: 'text-emerald-700' },
+  perpetual: { label: 'Perpetua', className: 'text-sky-700' },
+};
+
 const STATUS: Record<string, { label: string; className: string }> = {
   verified: { label: 'Verificada', className: 'text-emerald-700' },
   unverified: { label: 'No verificada', className: 'text-amber-800' },
@@ -24,6 +30,7 @@ const HEADERS = [
   'Fecha orden',
   'Objeto de la orden',
   'Situación',
+  'Orden verificada',
   'Proveedor',
   'Fila Excel',
 ];
@@ -40,6 +47,7 @@ export function NoConditionSigaTab({
   onError: (err: unknown) => void;
 }) {
   const [subset, setSubset] = useState('');
+  const [life, setLife] = useState('');
   const [search, setSearch] = useState('');
   const [data, setData] = useState<ViewResponse | null>(null);
   const [skip, setSkip] = useState(0);
@@ -50,9 +58,10 @@ export function NoConditionSigaTab({
   const query = useCallback(() => {
     const q = new URLSearchParams();
     if (search.trim()) q.set('search', search.trim());
-    if (subset) q.set('subset', subset);
+    const parts = [life, subset].filter(Boolean);
+    if (parts.length) q.set('subset', parts.join(','));
     return q;
-  }, [search, subset]);
+  }, [search, subset, life]);
 
   const load = useCallback(
     async (nextSkip: number) => {
@@ -75,7 +84,7 @@ export function NoConditionSigaTab({
   useEffect(() => {
     load(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subset]);
+  }, [subset, life]);
 
   async function exportView() {
     setExporting(true);
@@ -89,6 +98,11 @@ export function NoConditionSigaTab({
   }
 
   const total = counts ? counts.verified + counts.unverified + counts.noOrder : null;
+  const lifeOptions = [
+    { value: 'not_perpetual', label: 'No perpetuo (vencido)', n: counts?.notPerpetual },
+    { value: 'valid', label: 'Vigente', n: counts?.valid },
+    { value: 'perpetual', label: 'Perpetua (sin fecha)', n: counts?.perpetual },
+  ];
   const options = [
     { value: 'verified', label: 'Orden verificada', n: counts?.verified },
     { value: 'unverified', label: 'Orden no verificada', n: counts?.unverified },
@@ -108,14 +122,27 @@ export function NoConditionSigaTab({
           {counts && <> SIGA la tiene en {counts.withEndOfLife.toLocaleString('es-PE')} bienes.</>}
         </li>
         <li>
+          <strong>Situación</strong>: <strong>No perpetuo</strong> si el fin de vida útil ya pasó,{' '}
+          <strong>Vigente</strong> si todavía no llega y <strong>Perpetua</strong> si SIGA no tiene fecha.
+        </li>
+        <li>
           <strong>Orden verificada</strong>: la orden de SIGA contiene este mismo bien. <strong>No verificada</strong>: SIGA
           registra un N° de orden, pero la orden con ese número es de otra cosa; hay que revisarla a mano.
         </li>
       </ul>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <select className={inputClass} value={subset} onChange={(e) => setSubset(e.target.value)}>
-          <option value="">Todos</option>
+        <select className={inputClass} value={life} onChange={(e) => setLife(e.target.value)} aria-label="Situación">
+          <option value="">Toda situación</option>
+          {lifeOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+              {o.n !== undefined ? ` (${o.n.toLocaleString('es-PE')})` : ''}
+            </option>
+          ))}
+        </select>
+        <select className={inputClass} value={subset} onChange={(e) => setSubset(e.target.value)} aria-label="Orden">
+          <option value="">Toda orden</option>
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -162,6 +189,7 @@ export function NoConditionSigaTab({
               <tbody>
                 {data.items.map((r) => {
                   const st = STATUS[String(r.po_status)];
+                  const lf = LIFE[String(r.life_status)];
                   return (
                     <tr key={String(r.code)} className="border-b align-top last:border-0">
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">
@@ -175,6 +203,7 @@ export function NoConditionSigaTab({
                       </td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">{formatDate(r.po_date as string)}</td>
                       <td className="min-w-[16rem] py-2 pr-3 text-slate-700">{str(r.po_subject)}</td>
+                      <td className={`whitespace-nowrap py-2 pr-3 font-medium ${lf?.className ?? ''}`}>{lf?.label ?? '—'}</td>
                       <td className={`whitespace-nowrap py-2 pr-3 ${st?.className ?? ''}`}>{st?.label ?? '—'}</td>
                       <td className="min-w-[12rem] py-2 pr-3 text-slate-700">{str(r.supplier)}</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">{str(r.row_number)}</td>

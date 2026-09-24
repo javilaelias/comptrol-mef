@@ -15,3 +15,8 @@
 ## 5. QA y despliegue
 - [x] 5.1 Lint + tests + build; smoke local de la pestaña
 - [x] 5.2 (C4) Staging: `pg_dump` de tablas `intangible_*` y licencias, deploy, `prisma migrate deploy`, recarga SIGA por túnel, verificación de conteos y de que licencias/alertas no cambian
+
+## 6. Ajuste: Situación Perpetua / No perpetuo / Vigente
+- [x] 6.1 API: `life_status` (CASE sobre `end_of_life_at`), `subset` como lista separada por comas, conteos en `summary`, columna en la exportación
+- [x] 6.2 Web: columna "Situación" nueva + "Orden" aparte, dos filtros
+- [ ] 6.3 Verificar 570 / 346 / 16 en local y desplegar a staging (solo código, sin migración ni recarga)

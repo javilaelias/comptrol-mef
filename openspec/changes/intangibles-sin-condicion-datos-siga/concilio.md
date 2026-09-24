@@ -39,3 +39,20 @@ tipadas porque la migración es trivial y el patrón de despliegue ya la contemp
 ## Veredicto: **APROBADO CON CAMBIOS** (C1–C5 aplicados a `tasks.md`)
 Sin ADR (patrón existente, cambio aditivo). Estándar i18n/tema: el módulo Intangibles es solo ES
 hoy; la pestaña sigue el patrón del módulo (sin barrido retroactivo).
+
+---
+
+## Ajuste 2026-09-24 (pedido del usuario tras verlo en staging) — 2 revisores
+
+Pedido: la columna "Situación" pasa a clasificar la licencia según el fin de vida útil de SIGA:
+vencido → **No perpetuo**, sin fecha → **Perpetua**, fecha futura → **Vigente** (decisión del
+usuario para los 346 casos que el pedido no cubría). La verificación de la orden pasa a una
+columna aparte, "Orden", con su propio filtro (decisión del usuario).
+
+- **Reutilización — APROBADO.** Mismo patrón que `expiryBucketSql`: `CASE` en SQL, sin columna
+  nueva ni migración (depende de la fecha de hoy, no se persiste).
+- **Riesgo/QA — APROBADO.** Solo lectura, sin cambio de esquema. Los dos filtros viajan en
+  `subset` como lista separada por comas (el controlador no cambia). Verificar: 570 / 346 / 16.
+- Arquitectura software/solución: sin impacto (misma vista y endpoint).
+
+**Veredicto: APROBADO.**

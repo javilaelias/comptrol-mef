@@ -25,7 +25,8 @@ export type ReconciliationView = (typeof RECONCILIATION_VIEWS)[number];
 export type ViewFilters = {
   search?: string;
   /** only-siga: active | retired · pending: no_condition | defined_no_expiry · expiry: expired | expiring | valid
-   *  · no-condition-siga: verified | unverified | no_order */
+   *  · no-condition-siga: lista separada por comas de verified | unverified | no_order y
+   *    not_perpetual | valid | perpetual (situación según el fin de vida útil) */
   subset?: string;
   suspicious?: boolean;
   /** po-counts: solo las OC con diferencia */
@@ -100,7 +101,8 @@ const EXPORT_COLUMNS: Record<
     ['po_kind', 'Tipo de orden'],
     ['po_date', 'Fecha de la orden'],
     ['po_subject', 'Objeto de la orden'],
-    ['po_status_label', 'Situación de la orden'],
+    ['life_status_label', 'Situación'],
+    ['po_status_label', 'Orden'],
     ['contract', 'N° de contrato (SIGA)'],
     ['supplier', 'Proveedor (SIGA)'],
     ['registered_at', 'Fecha de alta (SIGA)'],
@@ -123,6 +125,16 @@ export const PO_STATUS_LABELS: Record<string, string> = {
   unverified: 'No verificada (el N° de SIGA no corresponde a este bien)',
   no_order: 'Sin orden (ingreso por NEA)',
 };
+
+export const LIFE_STATUS_LABELS: Record<string, string> = {
+  not_perpetual: 'No perpetuo',
+  valid: 'Vigente',
+  perpetual: 'Perpetua',
+};
+
+/** Situación según el fin de vida útil de SIGA: vencido, vigente o sin fecha (perpetua). */
+const lifeStatusSql = Prisma.sql`CASE WHEN s.end_of_life_at IS NULL THEN 'perpetual'
+  WHEN s.end_of_life_at < current_date THEN 'not_perpetual' ELSE 'valid' END`;
 
 /** Situación de la orden de SIGA de un bien: verificada por ítem, número sin verificar o sin orden. */
 const poStatusSql = Prisma.sql`CASE WHEN s.po_verified THEN 'verified'
@@ -171,8 +183,11 @@ export class ReconciliationService {
       SELECT count(*) FILTER (WHERE st = 'verified')::int AS verified,
              count(*) FILTER (WHERE st = 'unverified')::int AS unverified,
              count(*) FILTER (WHERE st = 'no_order')::int AS no_order,
-             count(eol)::int AS with_end_of_life
-        FROM (SELECT ${poStatusSql} AS st, s.end_of_life_at AS eol
+             count(eol)::int AS with_end_of_life,
+             count(*) FILTER (WHERE life = 'not_perpetual')::int AS not_perpetual,
+             count(*) FILTER (WHERE life = 'valid')::int AS life_valid,
+             count(*) FILTER (WHERE life = 'perpetual')::int AS perpetual
+        FROM (SELECT ${poStatusSql} AS st, ${lifeStatusSql} AS life, s.end_of_life_at AS eol
                 FROM c JOIN s ON s.patrimonial_code = c.patrimonial_code
                WHERE s.status = 'active' AND c.condition_norm IS NULL) t`;
 
@@ -211,6 +226,9 @@ export class ReconciliationService {
           unverified: noConditionSiga.unverified,
           noOrder: noConditionSiga.no_order,
           withEndOfLife: noConditionSiga.with_end_of_life,
+          notPerpetual: noConditionSiga.not_perpetual,
+          valid: noConditionSiga.life_valid,
+          perpetual: noConditionSiga.perpetual,
         },
         suspiciousAccount: counts.suspicious_account,
       },
@@ -381,22 +399,23 @@ export class ReconciliationService {
    * contable y la orden de compra/servicio (solo con fecha y objeto si se verificó por ítem).
    */
   private async noConditionSiga(tenantId: string, f: ViewFilters) {
-    const status = ['verified', 'unverified', 'no_order'].includes(f.subset ?? '')
-      ? f.subset!
-      : null;
+    const parts = (f.subset ?? '').split(',').map((v) => v.trim());
+    const status = parts.find((v) => Object.hasOwn(PO_STATUS_LABELS, v)) ?? null;
+    const life = parts.find((v) => Object.hasOwn(LIFE_STATUS_LABELS, v)) ?? null;
     const rows = await this.prisma.$queryRaw<Row[]>`
       ${currentRecordsCte(tenantId)}
       SELECT *, count(*) OVER ()::int AS total FROM (
         SELECT c.patrimonial_code AS code, c.description, c.row_number,
                to_char(s.end_of_life_at, 'YYYY-MM-DD') AS end_of_life_at, s.entry_doc,
                s.po_number, s.po_kind, to_char(s.po_date, 'YYYY-MM-DD') AS po_date, s.po_subject,
-               ${poStatusSql} AS po_status, s.contract_number AS contract, s.supplier_name AS supplier,
+               ${poStatusSql} AS po_status, ${lifeStatusSql} AS life_status, s.contract_number AS contract, s.supplier_name AS supplier,
                to_char(s.registered_at, 'YYYY-MM-DD') AS registered_at,
                ${suspiciousAccountSql} AS suspicious_account
           FROM c JOIN s ON s.patrimonial_code = c.patrimonial_code
          WHERE s.status = 'active' AND c.condition_norm IS NULL
       ) n
        WHERE (${status}::text IS NULL OR n.po_status = ${status})
+         AND (${life}::text IS NULL OR n.life_status = ${life})
          AND (${!!f.suspicious} = false OR n.suspicious_account)
          AND ${this.searchSql(f, Prisma.sql`n.code`, Prisma.sql`n.description`)}
        ORDER BY n.row_number
@@ -465,6 +484,7 @@ export class ReconciliationService {
         ...r,
         bucket_label: bucketLabel[String(r.bucket)] ?? null,
         po_status_label: PO_STATUS_LABELS[String(r.po_status)] ?? null,
+        life_status_label: LIFE_STATUS_LABELS[String(r.life_status)] ?? null,
       }));
     }
 
