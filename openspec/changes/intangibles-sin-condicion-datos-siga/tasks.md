@@ -26,3 +26,8 @@
 - [x] 7.2 Importador: cabecera + proveedor + ítems de las órdenes verificadas (una consulta por lote)
 - [x] 7.3 Web: fila expandible con la orden (C6 rótulo "reconstruida", C7 montos con moneda, C8 sin `estado`)
 - [x] 7.4 (C9) Verificar OC 1-2014 = S/ 84,096.44 y aviso en 140400030005; desplegar con respaldo y recargar SIGA
+
+## 8. Fecha de compra / NEA
+- [x] 8.1 Columna `entry_date` + migración `20260924140000_intangibles_entry_date`; importador `COALESCE(fecha_compra, fecha_nea)`
+- [x] 8.2 Vista, exportación, tabla y panel con rótulo "Fecha de compra / NEA (SIGA)" (C10)
+- [ ] 8.3 Verificar 932/932 con fecha y 140400030005 = 26/12/2013; desplegar con respaldo y recargar SIGA

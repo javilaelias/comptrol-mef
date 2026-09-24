@@ -79,3 +79,23 @@ columna aparte, "Orden", con su propio filtro (decisión del usuario).
   dato de solo lectura.
 
 **Veredicto: APROBADO CON CAMBIOS** (C6–C9 en `tasks.md`).
+
+---
+
+## Ampliación 2026-09-24: fecha de compra / NEA — 5 revisores (agrega columna)
+
+Pedido del usuario: que ningún bien quede sin fecha. Columna `entry_date` =
+`COALESCE(sig_patrimonio.fecha_compra, fecha_nea)`: fecha de compra en los 583 ingresos por OC,
+fecha de NEA en los 349 por NEA (cobertura 932/932 verificada).
+
+- **Arquitectura software / solución — APROBADO.** Mismo patrón aditivo que `end_of_life_at`
+  (columna nula, importador, vista, recarga por túnel). Sin endpoint nuevo.
+- **Reutilización — APROBADO.** `entry_doc` ya dice si el ingreso fue por OC o NEA; no hace falta
+  otra columna para el origen de la fecha.
+- **Producto/UX — APROBADO CON CAMBIOS.** C10: rótulo "Fecha de compra / NEA (SIGA)" y ayuda que
+  aclare que no es la fecha de la orden (en 549 de 583 difiere de la fecha de alta).
+- **Riesgo/QA — APROBADO.** Mismo respaldo previo y verificación de conteos (activos, licencias,
+  alertas) que las entregas anteriores; verificar 140400030005 → 26/12/2013.
+- **Simplicidad — APROBADO.**
+
+**Veredicto: APROBADO CON CAMBIOS** (C10 en `tasks.md`).

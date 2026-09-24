@@ -49,6 +49,7 @@ type FilaSiga = {
   ubicac_fisica: string | null;
   fec_fin_vida: Date | null;
   entry_doc: string | null;
+  entry_date: Date | null;
   po_tipo_bien: string | null;
   po_fecha: Date | null;
   po_concepto: string | null;
@@ -178,7 +179,7 @@ const CONSULTA = `
          p.estado, p.nro_orden, ct.nombre_prov, ct.nro_ruc, p.nro_contrato,
          p.fecha_alta, p.valor_inicial,
          sd.nombre AS sede_nombre, cc.nombre_depend, ub.ubicac_fisica,
-         p.fec_fin_vida, md.nombre AS entry_doc,
+         p.fec_fin_vida, md.nombre AS entry_doc, COALESCE(p.fecha_compra, p.fecha_nea) AS entry_date,
          oc.tipo_bien AS po_tipo_bien, oc.fecha_orden AS po_fecha, oc.concepto AS po_concepto,
          oc.ano_eje AS po_ano, oc.tipo_ppto AS po_tipo_ppto
     FROM sig_patrimonio p
@@ -317,6 +318,7 @@ async function main() {
         physicalLocation: texto(r.ubicac_fisica, 300),
         endOfLifeAt: r.fec_fin_vida,
         entryDoc: texto(r.entry_doc, 150),
+        entryDate: r.entry_date,
         poKind: r.po_tipo_bien === 'B' ? 'OC' : r.po_tipo_bien === 'S' ? 'OS' : null,
         poDate: r.po_fecha,
         poSubject: texto(r.po_concepto, 2000),

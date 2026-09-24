@@ -27,6 +27,7 @@ const HEADERS = [
   'Código',
   'Descripción',
   'Fin de vida útil (SIGA)',
+  'Fecha de compra / NEA (SIGA)',
   'Orden',
   'Fecha orden',
   'Objeto de la orden',
@@ -124,6 +125,11 @@ export function NoConditionSigaTab({
           {counts && <> SIGA la tiene en {counts.withEndOfLife.toLocaleString('es-PE')} bienes.</>}
         </li>
         <li>
+          <strong>Fecha de compra / NEA (SIGA)</strong>: la que SIGA anotó en la ficha del bien (fecha de compra si
+          ingresó por orden, fecha de la NEA si no). No es la fecha de la orden: esa solo figura cuando la orden está
+          verificada.
+        </li>
+        <li>
           <strong>Situación</strong>: <strong>No perpetuo</strong> si el fin de vida útil ya pasó,{' '}
           <strong>Vigente</strong> si todavía no llega y <strong>Perpetua</strong> si SIGA no tiene fecha.
         </li>
@@ -207,6 +213,9 @@ export function NoConditionSigaTab({
                       <td className="min-w-[16rem] py-2 pr-3 text-slate-700">{str(r.description)}</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">{formatDate(r.end_of_life_at as string)}</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700" title={str(r.entry_doc)}>
+                        {formatDate(r.entry_date as string)}
+                      </td>
+                      <td className="whitespace-nowrap py-2 pr-3 text-slate-700" title={str(r.entry_doc)}>
                         {r.po_number ? `${r.po_kind ? String(r.po_kind) : 'N°'} ${String(r.po_number)}` : '—'}
                       </td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">{formatDate(r.po_date as string)}</td>
@@ -223,6 +232,7 @@ export function NoConditionSigaTab({
                             code={String(r.code)}
                             poStatus={String(r.po_status)}
                             poNumber={r.po_number}
+                            entryDate={r.entry_date as string | null}
                             onError={onError}
                           />
                         </td>

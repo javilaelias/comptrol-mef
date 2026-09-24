@@ -97,6 +97,7 @@ const EXPORT_COLUMNS: Record<
     ['row_number', 'Fila del Excel'],
     ['end_of_life_at', 'Fin de vida útil (SIGA)'],
     ['entry_doc', 'Tipo de ingreso (SIGA)'],
+    ['entry_date', 'Fecha de compra / NEA (SIGA)'],
     ['po_number', 'N° de orden (SIGA)'],
     ['po_kind', 'Tipo de orden'],
     ['po_date', 'Fecha de la orden'],
@@ -407,6 +408,7 @@ export class ReconciliationService {
       SELECT *, count(*) OVER ()::int AS total FROM (
         SELECT c.patrimonial_code AS code, c.description, c.row_number,
                to_char(s.end_of_life_at, 'YYYY-MM-DD') AS end_of_life_at, s.entry_doc,
+               to_char(s.entry_date, 'YYYY-MM-DD') AS entry_date,
                s.po_number, s.po_kind, to_char(s.po_date, 'YYYY-MM-DD') AS po_date, s.po_subject,
                ${poStatusSql} AS po_status, ${lifeStatusSql} AS life_status, s.contract_number AS contract, s.supplier_name AS supplier,
                to_char(s.registered_at, 'YYYY-MM-DD') AS registered_at,

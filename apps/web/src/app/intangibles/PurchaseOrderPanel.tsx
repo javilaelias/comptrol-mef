@@ -65,11 +65,13 @@ export function PurchaseOrderPanel({
   code,
   poStatus,
   poNumber,
+  entryDate,
   onError,
 }: {
   code: string;
   poStatus: string;
   poNumber: unknown;
+  entryDate: string | null;
   onError: (err: unknown) => void;
 }) {
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
@@ -92,11 +94,17 @@ export function PurchaseOrderPanel({
       <p className="text-amber-900">
         SIGA registra la orden N° {String(poNumber)} para este bien, pero la orden con ese número (del año de compra o el
         anterior) es de otra cosa. No se muestra para no confundir: hay que ubicar la orden correcta a mano.
+        {entryDate && <> La ficha del bien en SIGA registra como fecha de compra el {formatDate(entryDate)}.</>}
       </p>
     );
   }
   if (poStatus === 'no_order') {
-    return <p className="text-slate-600">Este bien ingresó por Nota de Entrada de Almacén (NEA): SIGA no le asocia una orden.</p>;
+    return (
+      <p className="text-slate-600">
+        Este bien ingresó por Nota de Entrada de Almacén (NEA)
+        {entryDate && <> el {formatDate(entryDate)}</>}: SIGA no le asocia una orden.
+      </p>
+    );
   }
   if (loading) return <p className="text-slate-600">Cargando la orden…</p>;
   if (!order) return <p className="text-slate-600">La orden no está disponible en este corte de SIGA.</p>;
@@ -111,7 +119,8 @@ export function PurchaseOrderPanel({
       </div>
 
       <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Fecha" value={formatDate(order.date)} />
+        <Field label="Fecha de la orden" value={formatDate(order.date)} />
+        <Field label="Fecha de compra (ficha del bien)" value={entryDate ? formatDate(entryDate) : null} />
         <Field
           label="Proveedor"
           value={
