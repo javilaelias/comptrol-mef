@@ -36,6 +36,8 @@ completarlos. Se puede filtrar, buscar y exportar (incluye la fila del Excel).
 - **No verificada**: SIGA registra un N° de orden, pero la orden con ese número es de otra cosa
   (ej. `140400030005` → OC 553-2013 es de cableado). Revisar a mano.
 - **Sin orden (NEA)**: el bien ingresó por Nota de Entrada de Almacén.
+- **Fecha de compra / NEA (SIGA)**: la de la ficha del bien (fecha de compra si ingresó por orden,
+  de la NEA si no). No es la fecha de la orden, que solo figura cuando la orden está verificada.
 - **Situación**: *No perpetuo* si el fin de vida útil ya pasó, *Vigente* si todavía no llega,
   *Perpetua* si SIGA no tiene fecha.
 - **Clic en una fila**: muestra la orden reconstruida desde SIGA (fecha, proveedor y RUC, contrato,

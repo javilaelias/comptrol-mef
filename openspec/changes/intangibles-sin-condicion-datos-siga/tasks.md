@@ -30,4 +30,4 @@
 ## 8. Fecha de compra / NEA
 - [x] 8.1 Columna `entry_date` + migración `20260924140000_intangibles_entry_date`; importador `COALESCE(fecha_compra, fecha_nea)`
 - [x] 8.2 Vista, exportación, tabla y panel con rótulo "Fecha de compra / NEA (SIGA)" (C10)
-- [ ] 8.3 Verificar 932/932 con fecha y 140400030005 = 26/12/2013; desplegar con respaldo y recargar SIGA
+- [x] 8.3 Verificar 932/932 con fecha y 140400030005 = 26/12/2013; desplegar con respaldo y recargar SIGA
