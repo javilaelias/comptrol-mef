@@ -56,3 +56,26 @@ columna aparte, "Orden", con su propio filtro (decisión del usuario).
 - Arquitectura software/solución: sin impacto (misma vista y endpoint).
 
 **Veredicto: APROBADO.**
+
+---
+
+## Ampliación 2026-09-24: ver la orden al hacer clic — 5 revisores (agrega columna)
+
+- **Arquitectura de software — APROBADO.** `po_detail` JSONB en `intangible_records`: la orden es
+  una copia fija por corte, de solo lectura; se reemplaza junto con la versión SIGA (cascada).
+  Duplicar la orden en cada bien de la misma OC es aceptable (tamaño medido al cargar).
+  `IntangiblesService.detail` hace `const { raw, ...rest } = r` → `poDetail` sale solo.
+- **Arquitectura de solución — APROBADO.** Mismo importador y túnel; una consulta extra por lote
+  de órdenes (`unnest` de claves), sin N+1. Migración aditiva.
+- **Reutilización — APROBADO.** Endpoint de detalle existente; patrón de fila expandible de
+  `ListTab`.
+- **Producto/UX — APROBADO CON CAMBIOS.** C6: rotular "Orden reconstruida desde SIGA (no es el
+  documento firmado)". C7: montos con `formatMoney` y moneda de la orden.
+- **Riesgo/QA — APROBADO CON CAMBIOS.** C8: no mostrar el `estado` numérico de la orden (códigos
+  0/1/2/4 sin tabla que los explique). C9: verificar que la OC 1-2014 (140400030144) muestra
+  S/ 84,096.44 y que el 140400030005 muestra el aviso de no verificada. Mismo respaldo previo en
+  staging que la entrega anterior.
+- **Simplicidad — APROBADO.** Se descartó tabla `siga_purchase_orders` + FK: más piezas para un
+  dato de solo lectura.
+
+**Veredicto: APROBADO CON CAMBIOS** (C6–C9 en `tasks.md`).

@@ -491,6 +491,8 @@ model IntangibleRecord {
   poDate           DateTime?         @map("po_date") @db.Date
   poSubject        String?           @map("po_subject") @db.Text
   poVerified       Boolean?          @map("po_verified")
+  /// Orden verificada reconstruida desde SIGA (cabecera, proveedor, ítems); copia fija del corte.
+  poDetail         Json?             @map("po_detail") @db.JsonB
 
   batch IntangibleBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 

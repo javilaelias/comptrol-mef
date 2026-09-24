@@ -20,3 +20,9 @@
 - [x] 6.1 API: `life_status` (CASE sobre `end_of_life_at`), `subset` como lista separada por comas, conteos en `summary`, columna en la exportación
 - [x] 6.2 Web: columna "Situación" nueva + "Orden" aparte, dos filtros
 - [x] 6.3 Verificar 570 / 346 / 16 en local y desplegar a staging (solo código, sin migración ni recarga)
+
+## 7. Ver la orden al hacer clic
+- [x] 7.1 Columna `po_detail` JSONB + migración `20260924130000_intangibles_po_detail`
+- [x] 7.2 Importador: cabecera + proveedor + ítems de las órdenes verificadas (una consulta por lote)
+- [x] 7.3 Web: fila expandible con la orden (C6 rótulo "reconstruida", C7 montos con moneda, C8 sin `estado`)
+- [ ] 7.4 (C9) Verificar OC 1-2014 = S/ 84,096.44 y aviso en 140400030005; desplegar con respaldo y recargar SIGA

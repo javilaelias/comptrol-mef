@@ -40,3 +40,18 @@ Verificado contra `siga15072026` (sec_ejec 46) sobre los 932:
 - `apps/web/src/app/intangibles/` (page + tab nuevo).
 - Fuera de alcance: escribir la condición en el Excel o deducirla de SIGA; órdenes de servicio
   (ninguno de los 932 entra por OS, pero `po_kind` lo admite si aparece).
+
+## Ampliación 2026-09-24: ver la orden al hacer clic
+
+Pedido del usuario: al hacer clic en un bien, ver su orden de compra. SIGA **no guarda el PDF**
+firmado (única columna binaria: `sig_personal_firma.firma`), pero sí todos sus datos, así que se
+reconstruye: cabecera (`sig_orden_adquisicion`: fecha, contrato, documento de referencia, moneda,
+concepto, condición de pago, garantía, plazo, subtotal/IGV/total), proveedor
+(`sig_contratistas`) e ítems (`sig_orden_item` + `catalogo_bien_serv` + `unidad_medida`).
+
+- Solo para órdenes **verificadas** (mismo ítem de catálogo). En no verificadas y NEA el panel
+  explica por qué no hay orden.
+- Se guarda como `po_detail` (JSONB) en el registro SIGA, copia fija del corte: sin tabla nueva
+  ni join; staging no alcanza la base SIGA.
+- El detalle viaja por el endpoint existente `GET /intangibles/:code` (ya devuelve todas las
+  columnas del registro SIGA). La fila se expande al hacer clic, como en "Listado".

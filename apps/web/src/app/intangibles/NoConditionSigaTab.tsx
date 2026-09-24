@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiDownload, apiFetch } from '@/lib/api';
+import { PurchaseOrderPanel } from './PurchaseOrderPanel';
 import { formatDate, type ReconciliationSummary, type ViewResponse } from './types';
 import { buttonClass, inputClass, Pager, SuspiciousBadge } from './ui';
 
@@ -53,6 +54,7 @@ export function NoConditionSigaTab({
   const [skip, setSkip] = useState(0);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
   const counts = summary?.counts.noConditionSiga;
 
   const query = useCallback(() => {
@@ -127,7 +129,8 @@ export function NoConditionSigaTab({
         </li>
         <li>
           <strong>Orden verificada</strong>: la orden de SIGA contiene este mismo bien. <strong>No verificada</strong>: SIGA
-          registra un N° de orden, pero la orden con ese número es de otra cosa; hay que revisarla a mano.
+          registra un N° de orden, pero la orden con ese número es de otra cosa; hay que revisarla a mano. Haz clic en una
+          fila para ver su orden.
         </li>
       </ul>
 
@@ -191,7 +194,12 @@ export function NoConditionSigaTab({
                   const st = STATUS[String(r.po_status)];
                   const lf = LIFE[String(r.life_status)];
                   return (
-                    <tr key={String(r.code)} className="border-b align-top last:border-0">
+                    <React.Fragment key={String(r.code)}>
+                    <tr
+                      className="cursor-pointer border-b align-top hover:bg-slate-50"
+                      onClick={() => setOpen(open === r.code ? null : String(r.code))}
+                      title="Clic para ver la orden"
+                    >
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">
                         {str(r.code)}
                         {r.suspicious_account === true && <SuspiciousBadge />}
@@ -208,6 +216,19 @@ export function NoConditionSigaTab({
                       <td className="min-w-[12rem] py-2 pr-3 text-slate-700">{str(r.supplier)}</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-slate-700">{str(r.row_number)}</td>
                     </tr>
+                    {open === r.code && (
+                      <tr className="border-b bg-slate-50">
+                        <td colSpan={HEADERS.length} className="px-3 py-3 text-sm">
+                          <PurchaseOrderPanel
+                            code={String(r.code)}
+                            poStatus={String(r.po_status)}
+                            poNumber={r.po_number}
+                            onError={onError}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

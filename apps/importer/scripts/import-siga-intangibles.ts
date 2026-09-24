@@ -52,7 +52,126 @@ type FilaSiga = {
   po_tipo_bien: string | null;
   po_fecha: Date | null;
   po_concepto: string | null;
+  po_ano: number | null;
+  po_tipo_ppto: number | null;
 };
+
+type FilaOrden = {
+  ano_eje: number;
+  nro_orden: number;
+  tipo_bien: string;
+  tipo_ppto: number;
+  fecha_orden: Date | null;
+  nro_contrato: string | null;
+  fecha_contrato: Date | null;
+  docum_referencia: string | null;
+  moneda: string | null;
+  tipo_cambio: string | null;
+  concepto: string | null;
+  resumen_compra: string | null;
+  condicion_pago: string | null;
+  tipo_garantia: string | null;
+  plazo_entrega: number | null;
+  subtotal_moneda: string | null;
+  total_igv_moneda: string | null;
+  total_fact_moneda: string | null;
+  subtotal_soles: string | null;
+  total_igv_soles: string | null;
+  total_fact_soles: string | null;
+  nombre_prov: string | null;
+  nro_ruc: string | null;
+  items: Array<{
+    n: number;
+    catalogo: string;
+    descripcion: string | null;
+    cantidad: string | null;
+    unidad: string | null;
+    precio_unit: string | null;
+    total_moneda: string | null;
+    total_soles: string | null;
+    garantia: number | null;
+    especificaciones: string | null;
+  }> | null;
+};
+
+/** Cabecera, proveedor e ítems de las órdenes verificadas (una sola consulta por lote de claves). */
+const CONSULTA_ORDENES = `
+  WITH k AS (
+    SELECT * FROM unnest($2::int[], $3::int[], $4::text[], $5::int[]) AS k(ano_eje, nro_orden, tipo_bien, tipo_ppto))
+  SELECT o.ano_eje, o.nro_orden, o.tipo_bien, o.tipo_ppto, o.fecha_orden, o.nro_contrato, o.fecha_contrato,
+         o.docum_referencia, o.moneda, o.tipo_cambio, o.concepto, o.resumen_compra, o.condicion_pago,
+         o.tipo_garantia, o.plazo_entrega, o.subtotal_moneda, o.total_igv_moneda, o.total_fact_moneda,
+         o.subtotal_soles, o.total_igv_soles, o.total_fact_soles, ct.nombre_prov, ct.nro_ruc, it.items
+    FROM k
+    JOIN sig_orden_adquisicion o
+      ON o.sec_ejec = $1 AND o.ano_eje = k.ano_eje AND o.nro_orden = k.nro_orden
+     AND o.tipo_bien = k.tipo_bien AND o.tipo_ppto = k.tipo_ppto
+    LEFT JOIN LATERAL (
+           SELECT c.nombre_prov, c.nro_ruc FROM sig_contratistas c WHERE c.proveedor = o.proveedor LIMIT 1) ct ON TRUE
+    LEFT JOIN LATERAL (
+           SELECT json_agg(json_build_object(
+                    'n', i.sec_item,
+                    'catalogo', concat_ws('.', i.grupo_bien, i.clase_bien, i.familia_bien, i.item_bien),
+                    'descripcion', cb.nombre_item,
+                    'cantidad', i.cant_item,
+                    'unidad', um.nombre,
+                    'precio_unit', i.prec_unit_moneda,
+                    'total_moneda', i.prec_tot_moneda,
+                    'total_soles', i.prec_tot_soles,
+                    'garantia', i.plazo_garantia,
+                    'especificaciones', i.especificaciones) ORDER BY i.sec_orden, i.sec_item) AS items
+             FROM sig_orden_item i
+             LEFT JOIN LATERAL (
+                    SELECT c.nombre_item FROM catalogo_bien_serv c
+                     WHERE c.grupo_bien = i.grupo_bien AND c.clase_bien = i.clase_bien
+                       AND c.familia_bien = i.familia_bien AND c.item_bien = i.item_bien
+                     LIMIT 1) cb ON TRUE
+             LEFT JOIN unidad_medida um ON um.unidad_medida = i.unidad_medida
+            WHERE i.ano_eje = o.ano_eje AND i.sec_ejec = o.sec_ejec AND i.nro_orden = o.nro_orden
+              AND i.tipo_bien = o.tipo_bien AND i.tipo_ppto = o.tipo_ppto) it ON TRUE`;
+
+const claveOrden = (ano: number, nro: number, tipo: string, ppto: number) => `${ano}|${nro}|${tipo}|${ppto}`;
+
+const num = (v: string | number | null | undefined): number | null =>
+  v === null || v === undefined || v === '' ? null : Number(v);
+
+const fecha = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
+
+/** Orden de SIGA como se guarda en `po_detail` (claves en inglés, montos como número). */
+function detalleOrden(o: FilaOrden) {
+  return {
+    kind: o.tipo_bien === 'B' ? 'OC' : 'OS',
+    year: o.ano_eje,
+    number: o.nro_orden,
+    date: fecha(o.fecha_orden),
+    contract: texto(o.nro_contrato, 60),
+    contractDate: fecha(o.fecha_contrato),
+    reference: texto(o.docum_referencia, 100),
+    currency: texto(o.moneda, 6),
+    exchangeRate: num(o.tipo_cambio),
+    subject: texto(o.concepto, 2000),
+    summary: texto(o.resumen_compra, 500),
+    paymentTerms: texto(o.condicion_pago, 120),
+    warranty: texto(o.tipo_garantia, 120),
+    deliveryDays: o.plazo_entrega,
+    supplier: { name: texto(o.nombre_prov, 250), ruc: texto(o.nro_ruc, 20) },
+    subtotal: num(o.subtotal_moneda),
+    tax: num(o.total_igv_moneda),
+    total: num(o.total_fact_moneda),
+    totalSoles: num(o.total_fact_soles),
+    items: (o.items ?? []).map((i) => ({
+      n: i.n,
+      catalogCode: i.catalogo,
+      description: texto(i.descripcion, 500),
+      quantity: num(i.cantidad),
+      unit: texto(i.unidad, 60),
+      unitPrice: num(i.precio_unit),
+      total: num(i.total_moneda),
+      warrantyDays: i.garantia || null,
+      specs: texto(i.especificaciones, 4000),
+    })),
+  };
+}
 
 const CONSULTA = `
   SELECT p.codigo_activo, p.codigo_barra, p.descripcion, p.modelo, mk.nombre AS marca_nombre,
@@ -60,7 +179,8 @@ const CONSULTA = `
          p.fecha_alta, p.valor_inicial,
          sd.nombre AS sede_nombre, cc.nombre_depend, ub.ubicac_fisica,
          p.fec_fin_vida, md.nombre AS entry_doc,
-         oc.tipo_bien AS po_tipo_bien, oc.fecha_orden AS po_fecha, oc.concepto AS po_concepto
+         oc.tipo_bien AS po_tipo_bien, oc.fecha_orden AS po_fecha, oc.concepto AS po_concepto,
+         oc.ano_eje AS po_ano, oc.tipo_ppto AS po_tipo_ppto
     FROM sig_patrimonio p
     LEFT JOIN LATERAL (
            SELECT m.nombre FROM marca m
@@ -83,7 +203,7 @@ const CONSULTA = `
     -- o el anterior, que contenga el mismo ítem de catálogo. El cruce solo por número trae órdenes
     -- de otra cosa (ej. 140400030005 → OC 553-2013 es de cableado).
     LEFT JOIN LATERAL (
-           SELECT o.tipo_bien, o.fecha_orden, o.concepto FROM sig_orden_adquisicion o
+           SELECT o.ano_eje, o.tipo_ppto, o.tipo_bien, o.fecha_orden, o.concepto FROM sig_orden_adquisicion o
             WHERE o.sec_ejec = p.sec_ejec AND o.nro_orden = p.nro_orden AND o.tipo_bien IN ('B', 'S')
               AND o.ano_eje BETWEEN extract(year FROM COALESCE(p.fecha_compra, p.fecha_alta)) - 1
                                 AND extract(year FROM COALESCE(p.fecha_compra, p.fecha_alta))
@@ -149,6 +269,31 @@ async function main() {
     console.log(`SIGA: ${rows.length} bienes intangibles leidos`);
     if (!rows.length) throw new Error('SIGA no devolvio intangibles; no se crea ninguna version');
 
+    // Órdenes verificadas distintas → cabecera + ítems en una sola consulta.
+    const claves = new Map<string, [number, number, string, number]>();
+    for (const r of rows) {
+      if (r.po_tipo_bien && r.po_ano !== null && r.po_tipo_ppto !== null && r.nro_orden) {
+        claves.set(claveOrden(r.po_ano, r.nro_orden, r.po_tipo_bien, r.po_tipo_ppto), [
+          r.po_ano,
+          r.nro_orden,
+          r.po_tipo_bien,
+          r.po_tipo_ppto,
+        ]);
+      }
+    }
+    const k = [...claves.values()];
+    const { rows: ordenes } = await siga.query<FilaOrden>(CONSULTA_ORDENES, [
+      SEC_EJEC_MEF,
+      k.map((x) => x[0]),
+      k.map((x) => x[1]),
+      k.map((x) => x[2]),
+      k.map((x) => x[3]),
+    ]);
+    const detalles = new Map(
+      ordenes.map((o) => [claveOrden(o.ano_eje, o.nro_orden, o.tipo_bien, o.tipo_ppto), detalleOrden(o)]),
+    );
+    console.log(`SIGA: ${detalles.size} ordenes verificadas con su detalle`);
+
     const registros = rows.map((r) => {
       const valor = r.valor_inicial === null ? null : new Prisma.Decimal(r.valor_inicial);
       return {
@@ -176,6 +321,10 @@ async function main() {
         poDate: r.po_fecha,
         poSubject: texto(r.po_concepto, 2000),
         poVerified: r.nro_orden ? r.po_tipo_bien !== null : null,
+        poDetail:
+          r.po_tipo_bien && r.po_ano !== null && r.po_tipo_ppto !== null && r.nro_orden
+            ? (detalles.get(claveOrden(r.po_ano, r.nro_orden, r.po_tipo_bien, r.po_tipo_ppto)) ?? Prisma.DbNull)
+            : Prisma.DbNull,
       };
     });
 
