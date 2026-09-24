@@ -19,4 +19,4 @@
 ## 6. Ajuste: Situación Perpetua / No perpetuo / Vigente
 - [x] 6.1 API: `life_status` (CASE sobre `end_of_life_at`), `subset` como lista separada por comas, conteos en `summary`, columna en la exportación
 - [x] 6.2 Web: columna "Situación" nueva + "Orden" aparte, dos filtros
-- [ ] 6.3 Verificar 570 / 346 / 16 en local y desplegar a staging (solo código, sin migración ni recarga)
+- [x] 6.3 Verificar 570 / 346 / 16 en local y desplegar a staging (solo código, sin migración ni recarga)
